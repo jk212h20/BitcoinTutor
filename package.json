@@ -1,7 +1,7 @@
 {
-  "name": "bitcoin-quiz",
-  "version": "1.0.0",
-  "description": "Adaptive Socratic Bitcoin tutor — interactive quiz powered by LLM + structured knowledge base",
+  "name": "bitcoin-tutor",
+  "version": "2.0.0",
+  "description": "Adaptive Socratic Bitcoin tutor with Lightning auth, persistent profiles, and AI-powered faucet",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
@@ -10,6 +10,8 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "secp256k1": "^5.0.1",
+    "sql.js": "^1.12.0"
   }
 }

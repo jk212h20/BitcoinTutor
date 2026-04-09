@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitcoin Quiz</title>
+  <title>Bitcoin Tutor</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -18,6 +18,8 @@
       --accent-dim: #f7931a33;
       --user-bg: #1a2332;
       --bot-bg: #161b22;
+      --success: #3fb950;
+      --tip-bg: #1a2a1a;
     }
     
     html, body {
@@ -27,10 +29,7 @@
       color: var(--text);
     }
     
-    body {
-      display: flex;
-      flex-direction: column;
-    }
+    body { display: flex; flex-direction: column; }
     
     /* Header */
     .header {
@@ -43,31 +42,35 @@
     }
     
     .header .logo {
-      width: 32px;
-      height: 32px;
+      width: 32px; height: 32px;
       background: var(--accent);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
-      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 18px; color: #fff;
     }
     
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text);
-    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header .subtitle { font-size: 13px; color: var(--text-muted); margin-left: auto; }
     
-    .header .subtitle {
-      font-size: 13px;
+    .login-indicator {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
       color: var(--text-muted);
-      margin-left: auto;
+      display: none;
+    }
+    .login-indicator.active {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #1a2a1a;
+      border-color: var(--success);
+      color: var(--success);
     }
     
-    .new-quiz-btn {
+    .new-chat-btn {
       background: none;
       border: 1px solid var(--border);
       color: var(--text-muted);
@@ -77,10 +80,7 @@
       font-size: 13px;
       transition: all 0.2s;
     }
-    .new-quiz-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .new-chat-btn:hover { border-color: var(--accent); color: var(--accent); }
     
     /* Messages area */
     .messages {
@@ -93,8 +93,7 @@
     }
     
     .message {
-      max-width: 720px;
-      width: 100%;
+      max-width: 720px; width: 100%;
       margin: 0 auto;
       padding: 16px 20px;
       border-radius: 12px;
@@ -108,72 +107,102 @@
       to { opacity: 1; transform: translateY(0); }
     }
     
-    .message.bot {
-      background: var(--bot-bg);
-      border: 1px solid var(--border);
+    .message.bot { background: var(--bot-bg); border: 1px solid var(--border); }
+    .message.user { background: var(--user-bg); border: 1px solid #1e3a5f; }
+    .message.system {
+      background: var(--tip-bg);
+      border: 1px solid var(--success);
+      text-align: center;
+      font-size: 14px;
     }
     
-    .message.user {
-      background: var(--user-bg);
-      border: 1px solid #1e3a5f;
-    }
-    
-    .message.bot .sender {
-      color: var(--accent);
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .message .sender {
+      font-weight: 600; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
+    .message.bot .sender { color: var(--accent); }
+    .message.user .sender { color: #58a6ff; }
+    .message.system .sender { color: var(--success); }
     
-    .message.user .sender {
-      color: #58a6ff;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-    
-    .message .content {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    
+    .message .content { white-space: pre-wrap; word-wrap: break-word; }
     .message .content p { margin-bottom: 8px; }
     .message .content p:last-child { margin-bottom: 0; }
     .message .content strong, .message .content b { color: var(--accent); }
     .message .content em, .message .content i { color: #79c0ff; }
     .message .content code {
-      background: #0d1117;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px;
+      background: #0d1117; padding: 2px 6px;
+      border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
     }
     
-    /* Loading indicator */
-    .loading {
-      max-width: 720px;
-      width: 100%;
+    /* QR code container (for LNURL-auth) */
+    .qr-container {
+      max-width: 720px; width: 100%;
       margin: 0 auto;
-      padding: 16px 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      text-align: center;
+      animation: fadeIn 0.3s ease;
     }
     
-    .loading .dots {
-      display: flex;
-      gap: 6px;
+    .qr-container h3 {
+      color: var(--accent);
+      margin-bottom: 12px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
+    .qr-container img {
+      border-radius: 8px;
+      background: white;
+      padding: 12px;
+      max-width: 220px;
+    }
+    
+    .qr-container .lnurl-text {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      word-break: break-all;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .qr-container .lnurl-text:hover { background: var(--surface-hover); }
+    
+    .qr-container .qr-status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .qr-container .qr-status.success { color: var(--success); }
+    
+    .qr-container .wallet-help {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .qr-container .wallet-help a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .qr-container .wallet-help a:hover { text-decoration: underline; }
+
+    /* Loading */
+    .loading {
+      max-width: 720px; width: 100%;
+      margin: 0 auto; padding: 16px 20px;
+    }
+    .loading .dots { display: flex; gap: 6px; }
     .loading .dot {
-      width: 8px;
-      height: 8px;
-      background: var(--accent);
-      border-radius: 50%;
+      width: 8px; height: 8px;
+      background: var(--accent); border-radius: 50%;
       animation: bounce 1.4s ease-in-out infinite;
     }
-    
     .loading .dot:nth-child(2) { animation-delay: 0.2s; }
     .loading .dot:nth-child(3) { animation-delay: 0.4s; }
     
@@ -190,66 +219,36 @@
     }
     
     .input-wrapper {
-      max-width: 720px;
-      margin: 0 auto;
-      display: flex;
-      gap: 10px;
+      max-width: 720px; margin: 0 auto;
+      display: flex; gap: 10px;
     }
     
     .input-wrapper input {
-      flex: 1;
-      padding: 12px 16px;
+      flex: 1; padding: 12px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      color: var(--text);
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.2s;
+      color: var(--text); font-size: 15px;
+      outline: none; transition: border-color 0.2s;
     }
-    
-    .input-wrapper input:focus {
-      border-color: var(--accent);
-    }
-    
-    .input-wrapper input::placeholder {
-      color: var(--text-muted);
-    }
+    .input-wrapper input:focus { border-color: var(--accent); }
+    .input-wrapper input::placeholder { color: var(--text-muted); }
     
     .input-wrapper button {
       padding: 12px 24px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
     }
-    
-    .input-wrapper button:hover {
-      background: #e8851a;
-    }
-    
-    .input-wrapper button:disabled {
-      background: var(--border);
-      cursor: not-allowed;
-    }
+    .input-wrapper button:hover { background: #e8851a; }
+    .input-wrapper button:disabled { background: var(--border); cursor: not-allowed; }
     
     /* Scrollbar */
-    .messages::-webkit-scrollbar {
-      width: 6px;
-    }
-    .messages::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .messages::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
-    }
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     
-    /* Responsive */
     @media (max-width: 600px) {
       .message { padding: 12px 14px; font-size: 14px; }
       .header .subtitle { display: none; }
@@ -259,45 +258,48 @@
 <body>
   <div class="header">
     <div class="logo">₿</div>
-    <h1>Bitcoin Quiz</h1>
-    <span class="subtitle">Adaptive Socratic tutor · 157 topics</span>
-    <button class="new-quiz-btn" onclick="startNewQuiz()">New Quiz</button>
+    <h1>Bitcoin Tutor</h1>
+    <span class="login-indicator" id="loginIndicator">⚡ Logged in</span>
+    <span class="subtitle">Adaptive Socratic tutor</span>
+    <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
   </div>
   
-  <div class="messages" id="messages">
-    <!-- Messages will be added here -->
-  </div>
+  <div class="messages" id="messages"></div>
   
   <div class="input-area">
     <div class="input-wrapper">
-      <input 
-        type="text" 
-        id="userInput" 
-        placeholder="Type your answer or ask a question..." 
-        autocomplete="off"
-        disabled
-      />
+      <input type="text" id="userInput" placeholder="Type your answer or ask a question..." autocomplete="off" disabled />
       <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
     </div>
   </div>
 
   <script>
+    // === State ===
     let sessionId = null;
     let isLoading = false;
+    let isLoggedIn = false;
+    let authPollingInterval = null;
     
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
+    const loginIndicator = document.getElementById('loginIndicator');
     
-    // Simple markdown-like formatting
+    // === Visitor ID (localStorage fingerprint) ===
+    function getVisitorId() {
+      let id = localStorage.getItem('btc-tutor-visitor');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('btc-tutor-visitor', id);
+      }
+      return id;
+    }
+    
+    // === Message formatting ===
     function formatMessage(text) {
-      // Convert **bold**
       text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      // Convert *italic*
       text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
-      // Convert `code`
       text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-      // Convert newlines to <br> (but keep paragraph breaks)
       text = text.replace(/\n\n/g, '</p><p>');
       text = text.replace(/\n/g, '<br>');
       return '<p>' + text + '</p>';
@@ -306,8 +308,9 @@
     function addMessage(content, sender) {
       const msg = document.createElement('div');
       msg.className = `message ${sender}`;
+      const senderLabel = sender === 'bot' ? '₿ Tutor' : sender === 'system' ? '⚡ System' : 'You';
       msg.innerHTML = `
-        <div class="sender">${sender === 'bot' ? '₿ Tutor' : 'You'}</div>
+        <div class="sender">${senderLabel}</div>
         <div class="content">${formatMessage(content)}</div>
       `;
       messagesEl.appendChild(msg);
@@ -324,8 +327,8 @@
     }
     
     function hideLoading() {
-      const loading = document.getElementById('loading');
-      if (loading) loading.remove();
+      const el = document.getElementById('loading');
+      if (el) el.remove();
     }
     
     function setInputEnabled(enabled) {
@@ -334,21 +337,153 @@
       if (enabled) inputEl.focus();
     }
     
-    async function startNewQuiz() {
+    // === Handle special actions from the server ===
+    function handleActions(actions) {
+      if (!actions) return;
+      for (const action of actions) {
+        if (action.type === 'show_login') {
+          showLoginQR();
+        } else if (action.type === 'tip') {
+          addMessage(`⚡ The tutor just sent you ${action.amount} sats! "${action.reason}"`, 'system');
+        }
+      }
+    }
+    
+    // === LNURL-auth QR display ===
+    async function showLoginQR() {
+      if (!sessionId) return;
+      
+      try {
+        const res = await fetch('/api/auth/challenge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        // Create QR container
+        const qrDiv = document.createElement('div');
+        qrDiv.className = 'qr-container';
+        qrDiv.id = 'loginQR';
+        
+        // Use a QR code API for the image
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + data.lnurl)}`;
+        
+        qrDiv.innerHTML = `
+          <h3>⚡ Log in with Lightning</h3>
+          <img src="${qrUrl}" alt="LNURL-auth QR code" />
+          <div class="lnurl-text" onclick="copyLnurl('${data.lnurl}')" title="Click to copy">
+            ${data.lnurl.slice(0, 40)}...
+          </div>
+          <div class="qr-status" id="qrStatus">Waiting for wallet scan...</div>
+          <div class="wallet-help">
+            Don't have a Lightning wallet? Try <a href="https://phoenix.acinq.co/" target="_blank">Phoenix Wallet</a>
+          </div>
+        `;
+        
+        messagesEl.appendChild(qrDiv);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        
+        // Start polling for auth result
+        startAuthPolling(data.k1);
+        
+      } catch (err) {
+        console.error('Login QR error:', err);
+        addMessage('Had trouble generating the login code. Try again in a moment.', 'system');
+      }
+    }
+    
+    function copyLnurl(lnurl) {
+      navigator.clipboard.writeText(lnurl).then(() => {
+        const el = document.querySelector('.lnurl-text');
+        if (el) {
+          const original = el.textContent;
+          el.textContent = 'Copied!';
+          setTimeout(() => { el.textContent = original; }, 2000);
+        }
+      });
+    }
+    
+    function startAuthPolling(k1) {
+      if (authPollingInterval) clearInterval(authPollingInterval);
+      
+      let attempts = 0;
+      authPollingInterval = setInterval(async () => {
+        attempts++;
+        if (attempts > 150) { // 5 minutes at 2-second intervals
+          clearInterval(authPollingInterval);
+          const statusEl = document.getElementById('qrStatus');
+          if (statusEl) statusEl.textContent = 'Login expired. Send a message to try again.';
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/api/auth/status/${k1}`);
+          const data = await res.json();
+          
+          if (data.status === 'authenticated') {
+            clearInterval(authPollingInterval);
+            isLoggedIn = true;
+            
+            // Update UI
+            loginIndicator.classList.add('active');
+            const statusEl = document.getElementById('qrStatus');
+            if (statusEl) {
+              statusEl.textContent = '✅ Logged in successfully!';
+              statusEl.className = 'qr-status success';
+            }
+            
+            // Remove QR after a moment
+            setTimeout(() => {
+              const qr = document.getElementById('loginQR');
+              if (qr) qr.remove();
+            }, 2000);
+            
+            // Notify the tutor about the login
+            showLoading();
+            const notifyRes = await fetch('/api/auth/notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, isNewUser: data.isNewUser }),
+            });
+            const notifyData = await notifyRes.json();
+            hideLoading();
+            
+            if (notifyData.message) {
+              addMessage(notifyData.message, 'bot');
+              handleActions(notifyData.actions);
+            }
+          }
+        } catch (err) {
+          // Silently retry
+        }
+      }, 2000);
+    }
+    
+    // === Chat functions ===
+    async function startNewChat() {
       messagesEl.innerHTML = '';
       sessionId = null;
+      isLoggedIn = false;
+      loginIndicator.classList.remove('active');
+      if (authPollingInterval) clearInterval(authPollingInterval);
       setInputEnabled(false);
       showLoading();
       
       try {
-        const res = await fetch('/api/start', { method: 'POST' });
+        const res = await fetch('/api/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId: getVisitorId() }),
+        });
         const data = await res.json();
-        
         if (data.error) throw new Error(data.error);
         
         sessionId = data.sessionId;
         hideLoading();
         addMessage(data.message, 'bot');
+        handleActions(data.actions);
         setInputEnabled(true);
       } catch (err) {
         hideLoading();
@@ -374,16 +509,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, message: text }),
         });
-        
         const data = await res.json();
         
         if (data.error) {
           if (res.status === 404) {
-            // Session expired
-            addMessage("It looks like your session expired. Let me start a new quiz for you!", 'bot');
             hideLoading();
             isLoading = false;
-            await startNewQuiz();
+            addMessage("Looks like your session expired. Let me start fresh!", 'bot');
+            await startNewChat();
             return;
           }
           throw new Error(data.error);
@@ -391,9 +524,15 @@
         
         hideLoading();
         addMessage(data.message, 'bot');
+        handleActions(data.actions);
+        
+        if (data.isLoggedIn && !isLoggedIn) {
+          isLoggedIn = true;
+          loginIndicator.classList.add('active');
+        }
       } catch (err) {
         hideLoading();
-        addMessage('Sorry, something went wrong. Try sending your message again.', 'bot');
+        addMessage('Sorry, something went wrong. Try sending again.', 'bot');
         console.error('Chat error:', err);
       }
       
@@ -401,7 +540,7 @@
       setInputEnabled(true);
     }
     
-    // Enter key to send
+    // Enter to send
     inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -409,8 +548,8 @@
       }
     });
     
-    // Start quiz on page load
-    startNewQuiz();
+    // Start on load
+    startNewChat();
   </script>
 </body>
 </html>

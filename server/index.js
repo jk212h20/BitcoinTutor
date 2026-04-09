@@ -1,6 +1,6 @@
 /**
- * Bitcoin Quiz Server
- * Adaptive Socratic Bitcoin tutor powered by LLM + structured knowledge base
+ * Bitcoin Tutor Server
+ * Adaptive Socratic Bitcoin tutor with Lightning auth, persistent profiles, and AI faucet
  */
 const express = require('express');
 const cors = require('cors');
@@ -8,6 +8,8 @@ const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const knowledge = require('./knowledge');
+const database = require('./database');
+const lnurlAuth = require('./lnurl-auth');
 
 const app = express();
 app.use(cors());
@@ -19,6 +21,11 @@ const PORT = process.env.PORT || 3456;
 const PPQ_API_KEY = process.env.PPQ_API_KEY || 'sk-sOIHBImdCmUYVIXsBnsXBN';
 const PPQ_BASE_URL = process.env.PPQ_BASE_URL || 'https://api.ppq.ai/v1';
 const MODEL = process.env.MODEL || 'claude-sonnet-4.6';
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const FAUCET_BALANCE = parseInt(process.env.FAUCET_BALANCE || '21000'); // sats
+const FAUCET_MAX_TIP = parseInt(process.env.FAUCET_MAX_TIP || '100');
+const FAUCET_MAX_SESSION = parseInt(process.env.FAUCET_MAX_SESSION || '500');
+const FAUCET_MAX_DAILY = parseInt(process.env.FAUCET_MAX_DAILY || '5000');
 
 // Load knowledge base
 knowledge.loadKnowledge();
@@ -28,23 +35,24 @@ const firstQuestions = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'knowledge', 'first-questions.json'), 'utf8')
 );
 
-// In-memory sessions (no auth, no persistence)
+// In-memory sessions
 const sessions = new Map();
+// Track auth results for polling
+const authResults = new Map();
 
-function createSession() {
+function createSession(visitorId) {
   const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const firstQ = firstQuestions[Math.floor(Math.random() * firstQuestions.length)];
-  
-  // Load the topic content for the first question
-  const topicContent = knowledge.getTopic(firstQ.topic_slug);
   
   const session = {
     id,
-    messages: [],  // conversation history for LLM
-    testedTopics: [],  // slugs of topics we've asked about
-    knowledgeProfile: {},  // slug -> { correct, partial, wrong, confidence }
-    currentTopic: firstQ.topic_slug,
-    firstQuestion: firstQ,
+    visitorId: visitorId || null,
+    userId: null,       // set when logged in via LNURL-auth
+    pubkey: null,       // set when logged in
+    messages: [],       // conversation history for LLM
+    testedTopics: [],
+    knowledgeProfile: {},
+    exchangeCount: 0,   // how many user messages sent (for login timing)
+    loginSuggested: false,
     created: Date.now(),
   };
   
@@ -52,7 +60,7 @@ function createSession() {
   return session;
 }
 
-function buildSystemPrompt(session) {
+function buildSystemPrompt(session, visitorInfo) {
   // Build compact knowledge profile
   let profileText = 'No topics tested yet.';
   if (Object.keys(session.knowledgeProfile).length > 0) {
@@ -61,7 +69,65 @@ function buildSystemPrompt(session) {
       .join('\n');
   }
 
-  return `You are a friendly, knowledgeable Bitcoin tutor running an adaptive conversation. Your goal is to help the user deepen their Bitcoin understanding through Socratic dialogue — asking thoughtful questions, exploring what they know, explaining concepts, and naturally adapting to their level.
+  // Visitor context
+  let visitorContext = '';
+  if (visitorInfo) {
+    if (visitorInfo.isReturning) {
+      const linkedUser = visitorInfo.linked_user_id ? database.getUserById(visitorInfo.linked_user_id) : null;
+      if (linkedUser) {
+        visitorContext = `\n## Returning Visitor (Previously Logged In!)
+This person has been here ${visitorInfo.visit_count} times. They previously logged in with a Lightning wallet (pubkey: ${linkedUser.pubkey.slice(0, 12)}...). They have NOT logged in this session yet. You can playfully suggest they "prove" they're the same person by logging in again — it's a great teaching moment about cryptographic identity vs cookies!`;
+        if (visitorInfo.last_topics.length > 0) {
+          visitorContext += `\nTopics from their last visit: ${visitorInfo.last_topics.join(', ')}`;
+        }
+      } else {
+        visitorContext = `\n## Returning Visitor (Never Logged In)
+This person has visited ${visitorInfo.visit_count} times before but never logged in.`;
+        if (visitorInfo.last_topics.length > 0) {
+          visitorContext += ` Last time they were interested in: ${visitorInfo.last_topics.join(', ')}`;
+        }
+        visitorContext += `\nDon't mention login yet — wait until the conversation is flowing well.`;
+      }
+    }
+    // New visitors get no special context
+  }
+
+  // Login suggestion context
+  let loginContext = '';
+  if (!session.userId) {
+    if (session.exchangeCount >= 4 && !session.loginSuggested) {
+      loginContext = `\n## 💡 Login Suggestion Available
+The conversation is going well (${session.exchangeCount} exchanges). When it feels natural — maybe after a particularly good exchange — you can suggest the user save their progress by logging in with a Lightning wallet. Say something like "By the way, if you want to save this conversation and continue anytime, you can log in with a Lightning wallet." If they ask how, explain Lightning wallets briefly and recommend Phoenix Wallet (available on iOS and Android). To trigger the login QR, include this tool call:
+<tool>{"action": "show_login"}</tool>
+ONLY use this when the user is interested. Don't push it.`;
+    }
+  } else {
+    loginContext = `\n## ✅ User is Logged In
+Pubkey: ${session.pubkey ? session.pubkey.slice(0, 16) + '...' : 'unknown'}
+Their conversation is being saved automatically.`;
+  }
+
+  // Faucet context
+  let faucetContext = '';
+  if (session.userId) {
+    const sessionTips = database.getTipsForSession(session.id);
+    const dailyTips = database.getTotalTipsToday();
+    const remainingSession = FAUCET_MAX_SESSION - sessionTips;
+    const remainingDaily = FAUCET_MAX_DAILY - dailyTips;
+    const available = Math.max(0, Math.min(remainingSession, remainingDaily, FAUCET_BALANCE - dailyTips));
+    
+    if (available > 0) {
+      faucetContext = `\n## ⚡ Faucet (Secret Feature)
+You have ${available} sats available to tip this session (max ${FAUCET_MAX_TIP} sats per tip).
+You can tip a logged-in user for genuinely impressive answers, great questions, or insightful observations.
+This is YOUR budget — be judicious but generous when someone earns it. It's an Easter egg, not a marketing gimmick.
+To send sats: <tool>{"action": "send_sats", "amount": 21, "reason": "Great insight about X"}</tool>
+The user will see a message that you tipped them. Keep amounts small and meaningful (10-100 sats).
+Don't mention the faucet exists until you actually tip — let it be a surprise!`;
+    }
+  }
+
+  return `You are a friendly, knowledgeable Bitcoin tutor having an adaptive conversation. Your goal is to help the user deepen their Bitcoin understanding through Socratic dialogue — asking thoughtful questions, exploring what they know, explaining concepts, and naturally adapting to their level.
 
 ## Your Personality
 - Warm, curious, conversational — like a knowledgeable friend at a coffee shop
@@ -91,19 +157,15 @@ When you need to reference specific Bitcoin knowledge, use the tool calls provid
 - "What's your take on why Bitcoin fees go up and down?"
 - NOT: "Which of the following best describes X? A) ... B) ... C) ... D) ..."
 
-## Flow
-1. Start by learning what they're interested in or what they already know
-2. Ask a question that connects to their interest — something that invites a sentence or two
-3. React to their answer: acknowledge what's right, gently explore what's off, add a cool detail
-4. Ask a natural follow-up that goes slightly deeper, or pivot to something related
-5. If they want more explanation at any point, give it — but keep it digestible
-
 ## Rules
 - ONE question at a time
 - Keep your responses short — 2-4 short paragraphs max for most turns
 - After they answer, always engage with WHY — don't just say "right!" or "wrong!"
 - If they say "explain more", "tell me more", "why?", etc. — go deeper on the current topic
 - If they want to change topics, follow their lead enthusiastically
+${visitorContext}
+${loginContext}
+${faucetContext}
 
 ## Student's Knowledge Profile So Far
 ${profileText}
@@ -114,35 +176,50 @@ ${session.testedTopics.length > 0 ? session.testedTopics.join(', ') : 'None yet'
 ## Available Tool Calls
 You can request knowledge lookups by including JSON tool calls in your response. The system will execute them and provide the results. Format:
 
-To look up a topic before asking about it or explaining it:
+To look up a topic:
 <tool>{"action": "get_topic", "slug": "topic-slug-here"}</tool>
 
-To search for topics related to what the user is asking about:
+To search for topics:
 <tool>{"action": "search", "query": "search terms here"}</tool>
 
-To get related topics for follow-up questions:
+To get related topics:
 <tool>{"action": "related", "slug": "topic-slug-here"}</tool>
 
-IMPORTANT: You should use these tools to ground your knowledge. When asking a question about a specific concept, look it up first so your question and explanation are accurate.`;
+To show login QR (only when user is interested):
+<tool>{"action": "show_login"}</tool>
+
+${session.userId ? `To tip sats (only for logged-in users with great answers):
+<tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>` : ''}
+
+IMPORTANT: Use knowledge tools to ground your facts. When asking about a concept, look it up first.`;
 }
 
-async function callLLM(session, userMessage, isFirstMessage = false) {
-  // Add user message to history
+async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo = null) {
+  // Track exchanges
   if (userMessage) {
     session.messages.push({ role: 'user', content: userMessage });
+    session.exchangeCount++;
   }
 
-  const systemPrompt = buildSystemPrompt(session);
+  const systemPrompt = buildSystemPrompt(session, visitorInfo);
   
-  // For the first message, inject the first question context
   let messages = [...session.messages];
   if (isFirstMessage) {
-    messages = [
-      {
-        role: 'user',
-        content: `[SYSTEM: The student just arrived. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most, or what they'd like to explore. Keep it super short and inviting — don't list domains or be overly formal. Something like asking what drew them to Bitcoin, or what they're most curious about. Do NOT mention a knowledge base, tools, or domains. Just be a friendly person starting a conversation.]`
+    // Build first message based on visitor status
+    let firstInstruction = '';
+    if (visitorInfo && visitorInfo.isReturning) {
+      const linkedUser = visitorInfo.linked_user_id ? database.getUserById(visitorInfo.linked_user_id) : null;
+      if (linkedUser) {
+        firstInstruction = `[SYSTEM: This person has been here before (${visitorInfo.visit_count} times) and previously logged in with Lightning. Welcome them back playfully — something like "Hey, you look familiar..." or "I think I remember you..." and mention topics from last time if available (${visitorInfo.last_topics.join(', ') || 'none recorded'}). You can suggest they prove it's them by logging in, but keep it light and fun. Don't be formal about it.]`;
+      } else if (visitorInfo.visit_count > 1) {
+        firstInstruction = `[SYSTEM: This person has visited ${visitorInfo.visit_count} times before but never logged in. Give a warm welcome — you can be slightly playful about recognizing them ("Hey, welcome back! I think you've been here before...") and mention their previous topics if available (${visitorInfo.last_topics.join(', ') || 'none'}). Then ask what they'd like to explore. Don't mention login yet.]`;
+      } else {
+        firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains.]`;
       }
-    ];
+    } else {
+      firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains.]`;
+    }
+    messages = [{ role: 'user', content: firstInstruction }];
   }
 
   // Call LLM
@@ -178,7 +255,7 @@ async function callLLM(session, userMessage, isFirstMessage = false) {
     throw err;
   }
 
-  // Check for tool calls in the response and execute them
+  // Check for tool calls and execute them
   const toolPattern = /<tool>(.*?)<\/tool>/gs;
   let match;
   const toolCalls = [];
@@ -190,10 +267,39 @@ async function callLLM(session, userMessage, isFirstMessage = false) {
     }
   }
 
-  if (toolCalls.length > 0) {
-    // Execute tool calls and inject results
+  // Separate special actions from knowledge lookups
+  let specialActions = [];
+  let knowledgeCalls = [];
+  for (const call of toolCalls) {
+    if (call.action === 'show_login' || call.action === 'send_sats') {
+      specialActions.push(call);
+    } else {
+      knowledgeCalls.push(call);
+    }
+  }
+
+  // Handle special actions
+  let actionResults = [];
+  for (const action of specialActions) {
+    if (action.action === 'show_login') {
+      session.loginSuggested = true;
+      actionResults.push({ type: 'show_login' });
+    } else if (action.action === 'send_sats' && session.userId) {
+      const amount = Math.min(action.amount || 21, FAUCET_MAX_TIP);
+      const sessionTips = database.getTipsForSession(session.id);
+      const dailyTips = database.getTotalTipsToday();
+      if (sessionTips + amount <= FAUCET_MAX_SESSION && dailyTips + amount <= FAUCET_MAX_DAILY) {
+        database.recordTip(session.userId, session.id, amount, action.reason || 'Good answer');
+        actionResults.push({ type: 'tip', amount, reason: action.reason });
+        console.log(`Tipped ${amount} sats to user ${session.userId}: ${action.reason}`);
+      }
+    }
+  }
+
+  // Handle knowledge lookups (re-call LLM with results)
+  if (knowledgeCalls.length > 0) {
     let toolResults = '';
-    for (const call of toolCalls) {
+    for (const call of knowledgeCalls) {
       if (call.action === 'get_topic') {
         const topic = knowledge.getTopic(call.slug);
         if (topic) {
@@ -214,21 +320,13 @@ async function callLLM(session, userMessage, isFirstMessage = false) {
       }
     }
 
-    // Re-call LLM with tool results injected
-    // Strip tool calls from the original response
     const cleanResponse = response.replace(toolPattern, '').trim();
-    
-    // Add the assistant's attempt and tool results, then ask for a clean response
-    session.messages.push({ 
-      role: 'assistant', 
-      content: cleanResponse || 'Let me look that up...'
-    });
+    session.messages.push({ role: 'assistant', content: cleanResponse || 'Let me look that up...' });
     session.messages.push({
       role: 'user',
-      content: `[SYSTEM: Here are the knowledge base results you requested:${toolResults}\n\nNow continue the conversation naturally using this information. Do NOT include any <tool> tags in your response — you already have the information you need.]`
+      content: `[SYSTEM: Here are the knowledge base results you requested:${toolResults}\n\nNow continue the conversation naturally using this information. Do NOT include any <tool> tags in your response.]`
     });
 
-    // Second LLM call with the knowledge injected
     const res2 = await fetch(`${PPQ_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -246,68 +344,76 @@ async function callLLM(session, userMessage, isFirstMessage = false) {
       }),
     });
 
-    if (!res2.ok) {
-      throw new Error(`LLM API error on tool follow-up: ${res2.status}`);
-    }
-
+    if (!res2.ok) throw new Error(`LLM API error on tool follow-up: ${res2.status}`);
     const data2 = await res2.json();
     response = data2.choices[0].message.content;
-    
-    // Remove the system messages from history (keep it clean)
-    session.messages.pop(); // Remove tool results message
-    session.messages.pop(); // Remove partial assistant message
+    session.messages.pop();
+    session.messages.pop();
   }
 
-  // Clean any remaining tool tags from response
+  // Clean any remaining tool tags
   response = response.replace(/<tool>.*?<\/tool>/gs, '').trim();
 
   // Add final response to history
   session.messages.push({ role: 'assistant', content: response });
 
-  // Keep conversation history manageable (last 30 messages)
-  if (session.messages.length > 30) {
-    session.messages = session.messages.slice(-30);
+  // Keep conversation history manageable
+  if (session.messages.length > 40) {
+    session.messages = session.messages.slice(-40);
   }
 
-  return response;
+  // Save conversation for logged-in users
+  if (session.userId) {
+    database.saveConversation(session.userId, session.visitorId, session.messages, session.knowledgeProfile, session.testedTopics);
+  }
+
+  return { message: response, actions: actionResults };
 }
 
 // === Routes ===
 
-// Start a new quiz session
+// Start a new session
 app.post('/api/start', async (req, res) => {
   try {
-    const session = createSession();
-    const response = await callLLM(session, null, true);
+    const { visitorId } = req.body;
+    
+    // Track visitor
+    let visitorInfo = null;
+    if (visitorId) {
+      visitorInfo = database.createOrUpdateVisitor(visitorId);
+    }
+    
+    const session = createSession(visitorId);
+    const result = await callLLM(session, null, true, visitorInfo);
     
     res.json({
       sessionId: session.id,
-      message: response,
+      message: result.message,
+      actions: result.actions,
+      isReturning: visitorInfo ? visitorInfo.isReturning : false,
+      visitCount: visitorInfo ? visitorInfo.visit_count : 1,
     });
   } catch (err) {
     console.error('Error starting session:', err);
-    res.status(500).json({ error: 'Failed to start quiz session' });
+    res.status(500).json({ error: 'Failed to start session' });
   }
 });
 
-// Send a message in an existing session
+// Send a message
 app.post('/api/chat', async (req, res) => {
   try {
     const { sessionId, message } = req.body;
-    
-    if (!sessionId || !message) {
-      return res.status(400).json({ error: 'sessionId and message required' });
-    }
+    if (!sessionId || !message) return res.status(400).json({ error: 'sessionId and message required' });
     
     const session = sessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found. Start a new quiz.' });
-    }
+    if (!session) return res.status(404).json({ error: 'Session not found. Start a new conversation.' });
     
-    const response = await callLLM(session, message);
+    const result = await callLLM(session, message);
     
     res.json({
-      message: response,
+      message: result.message,
+      actions: result.actions,
+      isLoggedIn: !!session.userId,
     });
   } catch (err) {
     console.error('Error in chat:', err);
@@ -315,23 +421,126 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Get session info (for debugging/status)
+// === LNURL-auth Routes ===
+
+// Generate auth challenge (frontend calls this when user wants to log in)
+app.post('/api/auth/challenge', (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const session = sessions.get(sessionId);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    
+    const challenge = lnurlAuth.generateChallenge(BASE_URL, sessionId, session.visitorId);
+    
+    res.json({
+      k1: challenge.k1,
+      lnurl: challenge.lnurl,
+      expiresAt: challenge.expiresAt,
+    });
+  } catch (err) {
+    console.error('Error generating challenge:', err);
+    res.status(500).json({ error: 'Failed to generate login challenge' });
+  }
+});
+
+// LNURL-auth callback (called by the Lightning wallet)
+app.get('/api/auth/callback', (req, res) => {
+  try {
+    const { k1, sig, key } = req.query;
+    const result = lnurlAuth.verifyCallback(k1, sig, key);
+    
+    if (!result.success) {
+      return res.json({ status: 'ERROR', reason: result.error });
+    }
+    
+    // Link the session to the user
+    const session = sessions.get(result.sessionId);
+    if (session) {
+      session.userId = result.userId;
+      session.pubkey = result.pubkey;
+      
+      // Check for previous conversation to restore
+      const lastConvo = database.getLastConversation(result.userId);
+      if (lastConvo && !result.isNewUser) {
+        session.previousConversation = lastConvo;
+      }
+    }
+    
+    // Store result for polling
+    authResults.set(k1, {
+      success: true,
+      userId: result.userId,
+      isNewUser: result.isNewUser,
+      pubkey: result.pubkey,
+      timestamp: Date.now(),
+    });
+    
+    // LNURL spec requires this exact response format
+    res.json({ status: 'OK' });
+  } catch (err) {
+    console.error('Auth callback error:', err);
+    res.json({ status: 'ERROR', reason: 'Internal error' });
+  }
+});
+
+// Poll for auth status (frontend calls this after showing QR)
+app.get('/api/auth/status/:k1', (req, res) => {
+  const result = authResults.get(req.params.k1);
+  if (result) {
+    // Clean up old results
+    if (Date.now() - result.timestamp > 5 * 60 * 1000) {
+      authResults.delete(req.params.k1);
+      return res.json({ status: 'expired' });
+    }
+    return res.json({ status: 'authenticated', ...result });
+  }
+  res.json({ status: 'pending' });
+});
+
+// Notify tutor of successful login (frontend calls after detecting auth)
+app.post('/api/auth/notify', async (req, res) => {
+  try {
+    const { sessionId, isNewUser } = req.body;
+    const session = sessions.get(sessionId);
+    if (!session || !session.userId) return res.status(400).json({ error: 'Not authenticated' });
+    
+    // Inject a system message about the login
+    let loginNotice = '';
+    if (isNewUser) {
+      loginNotice = `[SYSTEM: The user just logged in for the first time using their Lightning wallet! 🎉 Welcome them as a new member. Their conversation will now be saved. This is a great moment to explain what just happened — they proved their identity using a cryptographic signature from their private key, which is exactly how Bitcoin transactions work. You can draw this parallel. Keep it brief and celebratory.]`;
+    } else {
+      const lastConvo = session.previousConversation;
+      if (lastConvo && lastConvo.topics_covered.length > 0) {
+        loginNotice = `[SYSTEM: The user just proved their identity by logging in with their Lightning wallet! They've been here before. Their previous topics were: ${lastConvo.topics_covered.join(', ')}. Welcome them back warmly and reference what you discussed last time. You can comment on how they just used cryptographic proof of identity — the same principle Bitcoin uses.]`;
+      } else {
+        loginNotice = `[SYSTEM: The user just logged in with their Lightning wallet — welcome back! They proved their identity cryptographically. You can briefly note how cool that is (same principle as Bitcoin transactions). Their conversation is now being saved.]`;
+      }
+    }
+    
+    const result = await callLLM(session, loginNotice);
+    res.json({ message: result.message, actions: result.actions });
+  } catch (err) {
+    console.error('Auth notify error:', err);
+    res.status(500).json({ error: 'Failed to notify tutor' });
+  }
+});
+
+// Get session info
 app.get('/api/session/:id', (req, res) => {
   const session = sessions.get(req.params.id);
-  if (!session) {
-    return res.status(404).json({ error: 'Session not found' });
-  }
+  if (!session) return res.status(404).json({ error: 'Session not found' });
   
   res.json({
     id: session.id,
     messageCount: session.messages.length,
+    exchangeCount: session.exchangeCount,
+    isLoggedIn: !!session.userId,
     testedTopics: session.testedTopics,
-    knowledgeProfile: session.knowledgeProfile,
     created: session.created,
   });
 });
 
-// Knowledge base info (for debugging)
+// Knowledge base info
 app.get('/api/knowledge/domains', (req, res) => {
   res.json(knowledge.getDomains());
 });
@@ -343,8 +552,19 @@ app.get('/api/knowledge/search', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Bitcoin Quiz server running on http://localhost:${PORT}`);
-  console.log(`Model: ${MODEL}`);
-  console.log(`Knowledge base: ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics`);
+async function start() {
+  await database.init();
+  knowledge.loadKnowledge();
+  
+  app.listen(PORT, () => {
+    console.log(`Bitcoin Tutor running on http://localhost:${PORT}`);
+    console.log(`Model: ${MODEL}`);
+    console.log(`Knowledge base: ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics`);
+    console.log(`Faucet: ${FAUCET_BALANCE} sats (max ${FAUCET_MAX_TIP}/tip, ${FAUCET_MAX_SESSION}/session, ${FAUCET_MAX_DAILY}/day)`);
+  });
+}
+
+start().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
