@@ -1,4 +1,4 @@
 {
-  "url": "http://localhost:3456",
-  "label": "Bitcoin Quiz"
+  "url": "https://bitcointutor-production.up.railway.app",
+  "label": "Bitcoin Tutor"
 }
