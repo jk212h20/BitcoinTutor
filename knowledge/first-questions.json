@@ -1,0 +1,202 @@
+[
+  {
+    "question": "What's the maximum number of bitcoins that will ever exist?",
+    "answer": "21 million (technically slightly less — 20,999,999.9769 BTC due to how the halving math works)",
+    "wrong_but_interesting": ["100 million", "There's no limit, new ones are always being created", "It depends on what miners vote for"],
+    "topic_slug": "difficulty-adjustment-algorithms",
+    "domain": "economics",
+    "difficulty": 1
+  },
+  {
+    "question": "What happens to Bitcoin if you lose your private key?",
+    "answer": "Those bitcoins are effectively lost forever — no one can spend them without the key. There's no password reset or customer support.",
+    "wrong_but_interesting": ["The coins go back into circulation after some time", "Miners can recover them", "The network eventually redistributes them"],
+    "topic_slug": "hd-key-generation",
+    "domain": "fundamentals",
+    "difficulty": 1
+  },
+  {
+    "question": "How often does Bitcoin's mining difficulty adjust?",
+    "answer": "Every 2,016 blocks (approximately every two weeks), the difficulty adjusts to target an average of 10 minutes per block.",
+    "wrong_but_interesting": ["Every block", "Once a month", "It doesn't — it only goes up"],
+    "topic_slug": "difficulty-adjustment-algorithms",
+    "domain": "mining",
+    "difficulty": 1
+  },
+  {
+    "question": "What does a Bitcoin miner actually do?",
+    "answer": "A miner repeatedly hashes a block header with different nonce values, trying to find a hash below the current target. It's a brute-force search, not 'solving equations.'",
+    "wrong_but_interesting": ["Solves complex math equations", "Validates all previous transactions from scratch", "Runs an AI algorithm to predict the next block"],
+    "topic_slug": "selfish-mining",
+    "domain": "mining",
+    "difficulty": 1
+  },
+  {
+    "question": "What is the 'mempool'?",
+    "answer": "Each node's set of unconfirmed transactions waiting to be included in a block. Every node has its own mempool — there's no single universal one.",
+    "wrong_but_interesting": ["A central server that queues transactions", "A type of mining pool", "The memory used by hardware wallets"],
+    "topic_slug": "cluster-mempool",
+    "domain": "transactions",
+    "difficulty": 1
+  },
+  {
+    "question": "What does 'UTXO' stand for, and why does it matter?",
+    "answer": "Unspent Transaction Output. Bitcoin doesn't use account balances — your 'balance' is the sum of all UTXOs you can spend. When you send bitcoin, you consume entire UTXOs and create new ones.",
+    "wrong_but_interesting": ["Universal Transaction eXchange Operation", "It's a type of smart contract", "It's the name for Bitcoin's consensus algorithm"],
+    "topic_slug": "coin-selection",
+    "domain": "transactions",
+    "difficulty": 2
+  },
+  {
+    "question": "What is a Bitcoin 'halving' and when does it happen?",
+    "answer": "Every 210,000 blocks (~4 years), the block reward paid to miners is cut in half. It started at 50 BTC in 2009, and as of 2024 it's 3.125 BTC per block.",
+    "wrong_but_interesting": ["The price drops in half", "The number of miners is reduced by half", "Transaction fees are halved"],
+    "topic_slug": "fee-sniping",
+    "domain": "mining",
+    "difficulty": 1
+  },
+  {
+    "question": "What is Replace-By-Fee (RBF)?",
+    "answer": "A policy that lets you replace an unconfirmed transaction with a new version that pays a higher fee. Useful when your original transaction is stuck due to a low fee.",
+    "wrong_but_interesting": ["A way to reverse confirmed transactions", "A mining algorithm", "A method to pay transaction fees with a different cryptocurrency"],
+    "topic_slug": "replace-by-fee",
+    "domain": "transactions",
+    "difficulty": 2
+  },
+  {
+    "question": "Why did Satoshi Nakamoto choose 10 minutes as the target block time?",
+    "answer": "It's a tradeoff — fast enough to be usable, slow enough for blocks to propagate across the network before the next one is found. If blocks were too fast, miners would frequently be working on stale blocks, wasting energy and hurting security.",
+    "wrong_but_interesting": ["It was arbitrary — no particular reason", "It's the time it takes to verify a signature", "Because the internet was slower in 2009"],
+    "topic_slug": "compact-block-relay",
+    "domain": "fundamentals",
+    "difficulty": 2
+  },
+  {
+    "question": "What is Segregated Witness (SegWit)?",
+    "answer": "A 2017 soft fork that separates (segregates) transaction signatures (witness data) from the transaction data. This fixed transaction malleability and effectively increased block capacity.",
+    "wrong_but_interesting": ["A way to make transactions anonymous", "A hard fork that created a new coin", "A type of mining hardware"],
+    "topic_slug": "segregated-witness",
+    "domain": "script",
+    "difficulty": 2
+  },
+  {
+    "question": "What is Taproot and why was it significant?",
+    "answer": "A 2021 soft fork that introduced Schnorr signatures and MAST to Bitcoin. It makes complex smart contracts (like multisig or timelocks) look identical to simple payments on-chain, improving privacy and efficiency.",
+    "wrong_but_interesting": ["A Layer 2 scaling solution", "A new consensus mechanism replacing proof-of-work", "A privacy coin feature that hides transaction amounts"],
+    "topic_slug": "taproot",
+    "domain": "script",
+    "difficulty": 2
+  },
+  {
+    "question": "What is the Lightning Network?",
+    "answer": "A Layer 2 payment protocol built on top of Bitcoin. It uses payment channels between nodes to enable instant, low-fee transactions without recording every payment on the blockchain.",
+    "wrong_but_interesting": ["A faster version of the Bitcoin blockchain", "A competing cryptocurrency", "A hardware acceleration system for mining"],
+    "topic_slug": "channel-factories",
+    "domain": "lightning",
+    "difficulty": 1
+  },
+  {
+    "question": "What is a 'seed phrase' (or mnemonic) and why is it typically 12 or 24 words?",
+    "answer": "A human-readable backup of your wallet's master private key. The 12/24 words encode 128/256 bits of entropy using the BIP39 wordlist. From this single seed, all your keys and addresses can be regenerated.",
+    "wrong_but_interesting": ["It's a password you choose yourself", "The words are encrypted transaction data", "It's only used for hardware wallets"],
+    "topic_slug": "hd-key-generation",
+    "domain": "wallets",
+    "difficulty": 2
+  },
+  {
+    "question": "Can Bitcoin transactions be reversed or 'charged back'?",
+    "answer": "No. Once a transaction is confirmed in a block (and especially after several confirmations), it's practically irreversible. This is by design — Bitcoin settlement is final.",
+    "wrong_but_interesting": ["Yes, if you contact the miners", "Yes, with enough computing power any transaction can be reversed easily", "Only within 24 hours of confirmation"],
+    "topic_slug": "replace-by-fee",
+    "domain": "fundamentals",
+    "difficulty": 1
+  },
+  {
+    "question": "What is 'CoinJoin' and what problem does it solve?",
+    "answer": "A privacy technique where multiple users combine their transactions into one, making it harder to trace which inputs paid which outputs. It breaks the chain analysis assumption that all inputs belong to the same person.",
+    "wrong_but_interesting": ["A way to merge two different cryptocurrencies", "A method to combine small UTXOs to save on fees", "A consensus mechanism for validating blocks"],
+    "topic_slug": "coinjoin",
+    "domain": "privacy",
+    "difficulty": 2
+  },
+  {
+    "question": "What is the difference between a Bitcoin full node and a miner?",
+    "answer": "A full node validates all transactions and blocks against consensus rules and maintains a copy of the blockchain. A miner does all of that PLUS expends energy trying to create new blocks. You can run a node without mining.",
+    "wrong_but_interesting": ["They're the same thing", "Full nodes mine at a slower rate", "Miners validate, nodes just store data"],
+    "topic_slug": "eclipse-attacks",
+    "domain": "network",
+    "difficulty": 1
+  },
+  {
+    "question": "What is a 'soft fork' versus a 'hard fork' in Bitcoin?",
+    "answer": "A soft fork tightens the rules — old nodes still accept the new blocks as valid. A hard fork loosens the rules — old nodes would reject the new blocks, causing a chain split. Bitcoin has only done soft forks (like SegWit and Taproot).",
+    "wrong_but_interesting": ["Soft forks are temporary, hard forks are permanent", "Hard forks require more computing power", "They're the same thing but named differently by different communities"],
+    "topic_slug": "soft-fork-activation",
+    "domain": "consensus",
+    "difficulty": 2
+  },
+  {
+    "question": "What is 'transaction pinning' and why do Lightning developers worry about it?",
+    "answer": "An attack where someone broadcasts a low-fee version of a transaction that's hard to replace, preventing the victim from getting their time-sensitive transaction confirmed. It's especially dangerous for Lightning channel closures.",
+    "wrong_but_interesting": ["Bookmarking a transaction on a block explorer", "Permanently locking funds in a channel", "A mining technique to prioritize certain transactions"],
+    "topic_slug": "transaction-pinning",
+    "domain": "transactions",
+    "difficulty": 3
+  },
+  {
+    "question": "What is a Schnorr signature and why is it considered an upgrade over ECDSA?",
+    "answer": "A digital signature scheme that is simpler, more efficient, and — crucially — supports native key and signature aggregation. Multiple signers can produce a single signature that looks the same as a solo signature, improving privacy and reducing fees.",
+    "wrong_but_interesting": ["It's faster because it uses quantum computing", "It encrypts the transaction data", "It's just a different name for the same algorithm Bitcoin always used"],
+    "topic_slug": "schnorr-signatures",
+    "domain": "cryptography",
+    "difficulty": 3
+  },
+  {
+    "question": "How does Bitcoin prevent someone from spending the same coins twice ('double spending')?",
+    "answer": "Every full node maintains the UTXO set and rejects transactions that try to spend already-spent outputs. Miners won't include double-spends in blocks, and the proof-of-work chain makes it astronomically expensive to rewrite history.",
+    "wrong_but_interesting": ["Each coin has a unique serial number tracked by a central server", "Transactions are checked by a group of elected validators", "The wallet software prevents it before the transaction is broadcast"],
+    "topic_slug": "replace-by-fee",
+    "domain": "fundamentals",
+    "difficulty": 2
+  },
+  {
+    "question": "What is a 'PSBT' (Partially Signed Bitcoin Transaction)?",
+    "answer": "A standard format (BIP174) for passing around unsigned or partially-signed transactions between wallets, hardware signers, and coordinators. It enables workflows where different parties or devices each add their signature.",
+    "wrong_but_interesting": ["A type of fast transaction that skips the mempool", "A privacy feature that hides the sender", "A special transaction only miners can create"],
+    "topic_slug": "psbt",
+    "domain": "wallets",
+    "difficulty": 3
+  },
+  {
+    "question": "Why do Bitcoin transaction fees exist, and who gets them?",
+    "answer": "Fees incentivize miners to include your transaction in a block. They go to whichever miner successfully mines the block containing your transaction. Fees are determined by supply (block space) and demand (pending transactions).",
+    "wrong_but_interesting": ["Fees are burned and destroyed", "Fees go to the Bitcoin Foundation", "Fees are distributed equally among all nodes"],
+    "topic_slug": "fee-estimation",
+    "domain": "transactions",
+    "difficulty": 1
+  },
+  {
+    "question": "What was the 'Blocksize War'?",
+    "answer": "A years-long debate (2015-2017) over whether to increase Bitcoin's block size limit. One side wanted bigger blocks for more throughput; the other wanted to keep blocks small and scale via layers like Lightning. The small-block side won, leading to SegWit and the BCH fork.",
+    "wrong_but_interesting": ["A competition between mining pools for the biggest blocks", "A DDoS attack on the Bitcoin network", "A disagreement about which hashing algorithm to use"],
+    "topic_slug": "segregated-witness",
+    "domain": "history",
+    "difficulty": 2
+  },
+  {
+    "question": "What is an HTLC (Hash Time-Locked Contract)?",
+    "answer": "A conditional payment that can be claimed by revealing a secret (hash preimage) before a timeout. If the secret isn't revealed in time, the funds return to the sender. HTLCs are the backbone of Lightning Network routing.",
+    "wrong_but_interesting": ["A type of hardware wallet", "A mining contract between pools", "A way to lock bitcoins for staking rewards"],
+    "topic_slug": "htlc",
+    "domain": "lightning",
+    "difficulty": 3
+  },
+  {
+    "question": "What is 'address reuse' and why is it bad?",
+    "answer": "Using the same Bitcoin address for multiple transactions. It hurts privacy (links your transactions together on-chain), and in theory could weaken the security of the public key if quantum computing advances.",
+    "wrong_but_interesting": ["It makes transactions cheaper", "It's required by most wallets", "It only matters for amounts over 1 BTC"],
+    "topic_slug": "output-linking",
+    "domain": "privacy",
+    "difficulty": 2
+  }
+]

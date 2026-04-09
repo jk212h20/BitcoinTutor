@@ -1,0 +1,91 @@
+# Simple taproot channels
+
+/ home / topics / 
+
+
+    Simple taproot channels
+    
+  
+
+  
+    
+
+
+
+
+Simple taproot channels are LND funding and commitment transactions that use taproot (P2TR) with support for MuSig2 scriptless multisignature signing when both parties are cooperating. This reduces transaction weight space and improves privacy when channels are closed cooperatively.
+
+The initial experimental deployment of simple taproot channels in LND
+continues to exclusively use HTLCs, allowing payments
+starting in a taproot channel to continue to be forwarded through other
+LN nodes that don’t support taproot channels.  Later upgrades of simple
+taproot channels, or alternative approaches, may begin supporting
+PTLCs.
+
+Primary code and documentation
+
+
+  BOLTs PR #995: simple taproot channels
+
+
+Optech newsletter and website mentions
+
+2025
+
+  Eclair #3103 adds support for simple taproot channels
+  LND #9669 downgrades simple taproot channels to always use the legacy cooperative close flow
+  Eclair #3026 adds support for wallets containing P2TR addresses in preparation for taproot channels
+  Eclair #3016 introduces low-level methods for creating LN transactions in simple taproot channels
+  Zero-knowledge gossip for LN channel announcements compatible with MuSig2 simple taproot channels
+  Eclair #2896 enables the storage of MuSig2 partial signatures for simple taproot channels
+
+
+2024
+
+  Updated channel announcements that include support for simple taproot channels
+  Discussion of channel upgrade methods, such as switching to simple taproot channels
+  LND #8499 makes significant changes to the TLV types used for simple taproot channels
+  LND #7733 updates its watchtower support for simple taproot channels
+
+
+2023
+
+  Zeus v0.8.0 released with support for simple taproot channels
+  Specifications for taproot assets released based on LND’s experimental simple taproot channels
+  LND #7904 adds experimental support for simple taproot channels
+
+
+See also
+
+
+  Taproot
+  
+    MuSig2
+
+    
+  
+
+
+
+
+Previous Topic:Silent payments
+
+
+
+
+Next Topic:Simplicity
+
+
+
+Edit page
+  Report Issue
+
+## Related Topics
+
+- topics ()
+- HTLCs (htlc)
+- PTLCs (ptlc)
+- Taproot (taproot)
+- MuSig2 (musig)
+- Silent payments (silent-payments)
+- Simplicity (simplicity)

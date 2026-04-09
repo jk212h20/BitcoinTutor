@@ -1,0 +1,2188 @@
+[
+  {
+    "slug": "multisignature",
+    "title": "Scriptless multisignatures",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "tapscript",
+      "schnorr-signatures",
+      "musig",
+      "multisignature",
+      "threshold-signature",
+      "adaptor-signatures",
+      "multipath-payments"
+    ],
+    "charCount": 1837
+  },
+  {
+    "slug": "accidental-confiscation",
+    "title": "Accidental confiscation",
+    "domain": "script",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "soft-fork-activation",
+      "acc",
+      "adaptor-signatures"
+    ],
+    "charCount": 3608
+  },
+  {
+    "slug": "acc",
+    "title": "Accountable Computing Contracts",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "matt",
+      "zero-conf-channels",
+      "accidental-confiscation"
+    ],
+    "charCount": 2239
+  },
+  {
+    "slug": "adaptor-signatures",
+    "title": "Adaptor signatures",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "schnorr-signatures",
+      "musig",
+      "accidental-confiscation",
+      "addr-v2"
+    ],
+    "charCount": 7050
+  },
+  {
+    "slug": "addr-v2",
+    "title": "Addr v2",
+    "domain": "network",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "anonymity-networks",
+      "adaptor-signatures",
+      "anchor-outputs"
+    ],
+    "charCount": 744
+  },
+  {
+    "slug": "output-linking",
+    "title": "Output linking",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "uneconomical-outputs",
+      "out-of-band-fees",
+      "output-script-descriptors"
+    ],
+    "charCount": 1770
+  },
+  {
+    "slug": "atomic-multipath",
+    "title": "Atomic multipath payments (AMPs)",
+    "domain": "lightning",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "multipath-payments",
+      "async-payments",
+      "attributable-failures"
+    ],
+    "charCount": 979
+  },
+  {
+    "slug": "cpfp",
+    "title": "Child pays for parent (CPFP)",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "cpfp-carve-out",
+      "package-relay",
+      "cross-input-signature-aggregation"
+    ],
+    "charCount": 1007
+  },
+  {
+    "slug": "anchor-outputs",
+    "title": "Anchor outputs",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "cpfp",
+      "cpfp-carve-out",
+      "package-relay",
+      "ephemeral-anchors",
+      "addr-v2",
+      "annex"
+    ],
+    "charCount": 1975
+  },
+  {
+    "slug": "annex",
+    "title": "Annex",
+    "domain": "script",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "anchor-outputs",
+      "anonymity-networks"
+    ],
+    "charCount": 542
+  },
+  {
+    "slug": "anonymity-networks",
+    "title": "Anonymity networks",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "eclipse-attacks",
+      "dandelion",
+      "addr-v2",
+      "annex",
+      "ark"
+    ],
+    "charCount": 1651
+  },
+  {
+    "slug": "fee-sniping",
+    "title": "Fee sniping",
+    "domain": "mining",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "fee-estimation",
+      "fee-sourcing"
+    ],
+    "charCount": 5891
+  },
+  {
+    "slug": "ark",
+    "title": "Ark protocol",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "op_checktemplateverify",
+      "joinpools",
+      "covenants",
+      "anonymity-networks",
+      "asicboost"
+    ],
+    "charCount": 2441
+  },
+  {
+    "slug": "asicboost",
+    "title": "ASICBoost",
+    "domain": "mining",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "soft-fork-activation/#2016-7-bip9-bip148-and-bip91-the-bip141143-segwit-activation",
+      "ark",
+      "assumeutxo"
+    ],
+    "charCount": 1084
+  },
+  {
+    "slug": "assumeutxo",
+    "title": "AssumeUTXO",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "asicboost",
+      "async-payments"
+    ],
+    "charCount": 1034
+  },
+  {
+    "slug": "async-payments",
+    "title": "Async payments",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "ptlc",
+      "ark",
+      "trampoline-payments",
+      "adaptor-signatures",
+      "proof-of-payment",
+      "assumeutxo",
+      "atomic-multipath"
+    ],
+    "charCount": 1786
+  },
+  {
+    "slug": "attributable-failures",
+    "title": "Attributable failures",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "atomic-multipath",
+      "basic-bitcoin-lisp-language"
+    ],
+    "charCount": 493
+  },
+  {
+    "slug": "multipath-payments",
+    "title": "Multipath payments",
+    "domain": "lightning",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "atomic-multipath",
+      "htlc",
+      "payment-secrets",
+      "minisketch",
+      "multisignature"
+    ],
+    "charCount": 1046
+  },
+  {
+    "slug": "basic-bitcoin-lisp-language",
+    "title": "Basic Bitcoin Lisp Language (bll)",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "simplicity",
+      "attributable-failures",
+      "bech32"
+    ],
+    "charCount": 524
+  },
+  {
+    "slug": "payment-batching",
+    "title": "Payment batching",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "op_checktemplateverify",
+      "payjoin",
+      "payment-probes"
+    ],
+    "charCount": 578
+  },
+  {
+    "slug": "bech32",
+    "title": "Bech32(m)",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "basic-bitcoin-lisp-language",
+      "bip70-payment-protocol"
+    ],
+    "charCount": 1027
+  },
+  {
+    "slug": "pooled-mining",
+    "title": "Pooled mining",
+    "domain": "mining",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "peer-storage",
+      "probabilistic-payments"
+    ],
+    "charCount": 10645
+  },
+  {
+    "slug": "soft-fork-activation",
+    "title": "Soft fork activation",
+    "domain": "consensus",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "simplicity",
+      "splicing"
+    ],
+    "charCount": 23315
+  },
+  {
+    "slug": "hd-key-generation",
+    "title": "HD key generation",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "output-script-descriptors",
+      "generic-signmessage",
+      "hold-invoices"
+    ],
+    "charCount": 459
+  },
+  {
+    "slug": "transaction-bloom-filtering",
+    "title": "Transaction bloom filtering",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "compact-block-filters",
+      "trampoline-payments",
+      "transaction-origin-privacy"
+    ],
+    "charCount": 2462
+  },
+  {
+    "slug": "consensus-cleanup-soft-fork",
+    "title": "Consensus cleanup soft fork",
+    "domain": "consensus",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "time-warp",
+      "merkle-tree-vulnerabilities",
+      "duplicate-transactions",
+      "soft-fork-activation",
+      "https://bitcoinops.orgcve/#CVE-2017-12842",
+      "compact-block-relay",
+      "countersign"
+    ],
+    "charCount": 1657
+  },
+  {
+    "slug": "bip70-payment-protocol",
+    "title": "BIP70 payment protocol",
+    "domain": "network",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "bech32",
+      "block-explorers"
+    ],
+    "charCount": 2422
+  },
+  {
+    "slug": "payjoin",
+    "title": "Payjoin",
+    "domain": "transactions",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "pay-to-contract-outputs",
+      "payment-batching"
+    ],
+    "charCount": 510
+  },
+  {
+    "slug": "codex32",
+    "title": "Codex32",
+    "domain": "wallets",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "hd-key-generation",
+      "cluster-mempool",
+      "coin-selection"
+    ],
+    "charCount": 591
+  },
+  {
+    "slug": "replace-by-fee",
+    "title": "Replace-by-fee (RBF)",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "transaction-pinning",
+      "version-3-transaction-relay",
+      "rendez-vous-routing",
+      "replacement-cycling"
+    ],
+    "charCount": 1078
+  },
+  {
+    "slug": "v2-p2p-transport",
+    "title": "Version 2 P2P transport",
+    "domain": "network",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "countersign",
+      "utreexo",
+      "v3-commitments"
+    ],
+    "charCount": 392
+  },
+  {
+    "slug": "compact-block-relay",
+    "title": "Compact block relay",
+    "domain": "mining",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "compact-block-filters",
+      "consensus-cleanup-soft-fork"
+    ],
+    "charCount": 3330
+  },
+  {
+    "slug": "dandelion",
+    "title": "Dandelion",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "v2-p2p-transport",
+      "transaction-origin-privacy",
+      "anonymity-networks",
+      "cve",
+      "default-minimum-transaction-relay-feerates"
+    ],
+    "charCount": 465
+  },
+  {
+    "slug": "compact-block-filters",
+    "title": "Compact block filters",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "transaction-bloom-filtering",
+      "coinswap",
+      "compact-block-relay"
+    ],
+    "charCount": 1547
+  },
+  {
+    "slug": "psbt",
+    "title": "Partially signed bitcoin transactions",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "output-script-descriptors",
+      "miniscript",
+      "proof-of-reserves",
+      "ptlc"
+    ],
+    "charCount": 1156
+  },
+  {
+    "slug": "generic-signmessage",
+    "title": "Generic signmessage",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "gap-limits",
+      "hd-key-generation"
+    ],
+    "charCount": 819
+  },
+  {
+    "slug": "package-relay",
+    "title": "Package relay",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "cpfp",
+      "anchor-outputs",
+      "output-script-descriptors",
+      "pay-to-contract-outputs"
+    ],
+    "charCount": 1195
+  },
+  {
+    "slug": "rendez-vous-routing",
+    "title": "Rendez-vous routing",
+    "domain": "lightning",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "unannounced-channels",
+      "onion-messages",
+      "offers",
+      "redundant-overpayments",
+      "replace-by-fee"
+    ],
+    "charCount": 449
+  },
+  {
+    "slug": "duplicate-transactions",
+    "title": "Duplicate transactions",
+    "domain": "consensus",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "consensus-cleanup-soft-fork",
+      "duplex-micropayment-channels",
+      "ecash"
+    ],
+    "charCount": 3275
+  },
+  {
+    "slug": "block-explorers",
+    "title": "Block explorers",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "bip70-payment-protocol",
+      "block-withholding"
+    ],
+    "charCount": 573
+  },
+  {
+    "slug": "block-withholding",
+    "title": "Block withholding",
+    "domain": "mining",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "pooled-mining",
+      "block-explorers",
+      "bls-signatures"
+    ],
+    "charCount": 2340
+  },
+  {
+    "slug": "bls-signatures",
+    "title": "BLS signatures",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "musig",
+      "ptlc",
+      "multisignature",
+      "block-withholding",
+      "channel-announcements"
+    ],
+    "charCount": 1434
+  },
+  {
+    "slug": "offers",
+    "title": "Offers",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "rendez-vous-routing",
+      "musig",
+      "onion-messages"
+    ],
+    "charCount": 1221
+  },
+  {
+    "slug": "redundant-overpayments",
+    "title": "Redundant overpayments",
+    "domain": "lightning",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "multipath-payments",
+      "atomic-multipath",
+      "quantum-resistance",
+      "rendez-vous-routing"
+    ],
+    "charCount": 1961
+  },
+  {
+    "slug": "channel-announcements",
+    "title": "Channel announcements",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "unannounced-channels",
+      "simple-taproot-channels",
+      "taproot",
+      "bls-signatures",
+      "channel-commitment-upgrades"
+    ],
+    "charCount": 2972
+  },
+  {
+    "slug": "channel-commitment-upgrades",
+    "title": "Channel commitment upgrades",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "anchor-outputs",
+      "eltoo",
+      "ptlc",
+      "channel-announcements",
+      "channel-factories"
+    ],
+    "charCount": 973
+  },
+  {
+    "slug": "channel-factories",
+    "title": "Channel factories",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "eltoo",
+      "channel-commitment-upgrades",
+      "channel-jamming-attacks"
+    ],
+    "charCount": 864
+  },
+  {
+    "slug": "channel-jamming-attacks",
+    "title": "Channel jamming attacks",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "htlc-endorsement",
+      "channel-factories",
+      "client-side-validation"
+    ],
+    "charCount": 1589
+  },
+  {
+    "slug": "client-side-validation",
+    "title": "Client-side validation",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "pay-to-contract-outputs",
+      "channel-jamming-attacks",
+      "cltv-expiry-delta"
+    ],
+    "charCount": 2947
+  },
+  {
+    "slug": "cltv-expiry-delta",
+    "title": "CLTV expiry delta",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "client-side-validation",
+      "cluster-mempool"
+    ],
+    "charCount": 2881
+  },
+  {
+    "slug": "cluster-mempool",
+    "title": "Cluster mempool",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "cpfp",
+      "replace-by-fee",
+      "package-relay",
+      "cltv-expiry-delta",
+      "codex32"
+    ],
+    "charCount": 5096
+  },
+  {
+    "slug": "coin-selection",
+    "title": "Coin selection",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "codex32",
+      "coinjoin"
+    ],
+    "charCount": 587
+  },
+  {
+    "slug": "coinjoin",
+    "title": "Coinjoin",
+    "domain": "transactions",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "payjoin",
+      "coin-selection",
+      "coinswap"
+    ],
+    "charCount": 3927
+  },
+  {
+    "slug": "joinpools",
+    "title": "Joinpools",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "coinjoin",
+      "channel-factories",
+      "covenants",
+      "jit-routing",
+      "kindred-replace-by-fee"
+    ],
+    "charCount": 555
+  },
+  {
+    "slug": "coinswap",
+    "title": "Coinswap",
+    "domain": "privacy",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "coinjoin",
+      "payment-batching",
+      "htlc",
+      "ptlc",
+      "submarine-swaps",
+      "compact-block-filters"
+    ],
+    "charCount": 1115
+  },
+  {
+    "slug": "countersign",
+    "title": "Countersign",
+    "domain": "network",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "consensus-cleanup-soft-fork",
+      "covenants"
+    ],
+    "charCount": 682
+  },
+  {
+    "slug": "covenants",
+    "title": "Covenants",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "op_checksigfromstack",
+      "op_checktemplateverify",
+      "sighash_anyprevout",
+      "vaults",
+      "countersign",
+      "cpfp-carve-out"
+    ],
+    "charCount": 639
+  },
+  {
+    "slug": "cpfp-carve-out",
+    "title": "CPFP carve out",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "transaction-pinning",
+      "anchor-outputs",
+      "version-3-transaction-relay",
+      "covenants",
+      "cpfp"
+    ],
+    "charCount": 555
+  },
+  {
+    "slug": "cross-input-signature-aggregation",
+    "title": "Cross-input signature aggregation (CISA)",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "musig",
+      "coinjoin",
+      "schnorr-signatures",
+      "bls-signatures",
+      "cpfp",
+      "cve-2018-17144"
+    ],
+    "charCount": 1204
+  },
+  {
+    "slug": "cve",
+    "title": "CVEs (various)",
+    "domain": "network",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "cve-2018-17144",
+      "consensus-cleanup-soft-fork",
+      "eclipse-attacks",
+      "responsible-disclosures",
+      "dandelion"
+    ],
+    "charCount": 5221
+  },
+  {
+    "slug": "cve-2018-17144",
+    "title": "CVE-2018-17144",
+    "domain": "transactions",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "cross-input-signature-aggregation",
+      "cve"
+    ],
+    "charCount": 1989
+  },
+  {
+    "slug": "default-minimum-transaction-relay-feerates",
+    "title": "Default minimum transaction relay feerates",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "package-relay",
+      "ephemeral-anchors",
+      "dandelion",
+      "difficulty-adjustment-algorithms"
+    ],
+    "charCount": 369
+  },
+  {
+    "slug": "signer-delegation",
+    "title": "Signer delegation",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "statechains",
+      "op_checksigfromstack",
+      "sighash_anyprevout",
+      "signet"
+    ],
+    "charCount": 373
+  },
+  {
+    "slug": "output-script-descriptors",
+    "title": "Output script descriptors",
+    "domain": "wallets",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "miniscript",
+      "psbt",
+      "output-linking",
+      "package-relay"
+    ],
+    "charCount": 544
+  },
+  {
+    "slug": "difficulty-adjustment-algorithms",
+    "title": "Difficulty adjustment algorithms",
+    "domain": "mining",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "testnet",
+      "pooled-mining",
+      "time-warp",
+      "default-minimum-transaction-relay-feerates",
+      "discreet-log-contracts"
+    ],
+    "charCount": 1385
+  },
+  {
+    "slug": "discreet-log-contracts",
+    "title": "Discreet Log Contracts (DLCs)",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "adaptor-signatures",
+      "difficulty-adjustment-algorithms",
+      "discrete-log-equivalency"
+    ],
+    "charCount": 1330
+  },
+  {
+    "slug": "discrete-log-equivalency",
+    "title": "Discrete log equivalency (DLEQ)",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "coinjoin",
+      "silent-payments",
+      "discreet-log-contracts",
+      "dual-funding"
+    ],
+    "charCount": 3477
+  },
+  {
+    "slug": "dual-funding",
+    "title": "Dual funding",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "coinjoin",
+      "payjoin",
+      "liquidity-advertisements",
+      "psbt",
+      "submarine-swaps",
+      "splicing",
+      "discrete-log-equivalency",
+      "duplex-micropayment-channels"
+    ],
+    "charCount": 2406
+  },
+  {
+    "slug": "duplex-micropayment-channels",
+    "title": "Duplex micropayment channels",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "dual-funding",
+      "duplicate-transactions"
+    ],
+    "charCount": 454
+  },
+  {
+    "slug": "uneconomical-outputs",
+    "title": "Uneconomical outputs",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "output-linking",
+      "ephemeral-anchors",
+      "unannounced-channels",
+      "utreexo"
+    ],
+    "charCount": 738
+  },
+  {
+    "slug": "ecash",
+    "title": "Ecash",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "duplicate-transactions",
+      "eclipse-attacks"
+    ],
+    "charCount": 1478
+  },
+  {
+    "slug": "eclipse-attacks",
+    "title": "Eclipse attacks",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "anonymity-networks",
+      "ecash",
+      "eltoo"
+    ],
+    "charCount": 1582
+  },
+  {
+    "slug": "eltoo",
+    "title": "Eltoo",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "channel-factories",
+      "sighash_anyprevout",
+      "eclipse-attacks",
+      "ephemeral-anchors"
+    ],
+    "charCount": 1124
+  },
+  {
+    "slug": "fee-sourcing",
+    "title": "Fee sourcing",
+    "domain": "transactions",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "out-of-band-fees",
+      "replace-by-fee",
+      "fee-estimation",
+      "fee-sniping",
+      "fee-sponsorship"
+    ],
+    "charCount": 3666
+  },
+  {
+    "slug": "ephemeral-anchors",
+    "title": "Ephemeral anchors",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "version-3-transaction-relay",
+      "package-relay",
+      "fee-sponsorship",
+      "anchor-outputs",
+      "cpfp-carve-out",
+      "eltoo",
+      "erlay"
+    ],
+    "charCount": 1432
+  },
+  {
+    "slug": "erlay",
+    "title": "Erlay",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "minisketch",
+      "ephemeral-anchors",
+      "exfiltration-resistant-signing"
+    ],
+    "charCount": 1159
+  },
+  {
+    "slug": "exfiltration-resistant-signing",
+    "title": "Exfiltration-resistant signing",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "erlay",
+      "expiration-floods"
+    ],
+    "charCount": 402
+  },
+  {
+    "slug": "expiration-floods",
+    "title": "Expiration floods",
+    "domain": "lightning",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "timelocks",
+      "ptlc",
+      "exfiltration-resistant-signing",
+      "fee-estimation"
+    ],
+    "charCount": 4050
+  },
+  {
+    "slug": "fee-estimation",
+    "title": "Fee estimation",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "coin-selection",
+      "expiration-floods",
+      "fee-sniping"
+    ],
+    "charCount": 294
+  },
+  {
+    "slug": "fee-sponsorship",
+    "title": "Fee sponsorship",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "cpfp",
+      "transaction-pinning",
+      "ephemeral-anchors",
+      "fee-sourcing",
+      "free-relay"
+    ],
+    "charCount": 413
+  },
+  {
+    "slug": "free-relay",
+    "title": "Free relay",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "replace-by-fee",
+      "fee-sponsorship",
+      "gap-limits"
+    ],
+    "charCount": 1437
+  },
+  {
+    "slug": "gap-limits",
+    "title": "Gap limits",
+    "domain": "wallets",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "hd-key-generation",
+      "free-relay",
+      "generic-signmessage"
+    ],
+    "charCount": 1883
+  },
+  {
+    "slug": "reproducible-builds",
+    "title": "Reproducible builds",
+    "domain": "network",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "replacement-cycling",
+      "responsible-disclosures"
+    ],
+    "charCount": 606
+  },
+  {
+    "slug": "hwi",
+    "title": "Hardware wallet interface (HWI)",
+    "domain": "wallets",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "psbt",
+      "output-script-descriptors",
+      "miniscript",
+      "exfiltration-resistant-signing",
+      "htlc",
+      "inbound-forwarding-fees"
+    ],
+    "charCount": 359
+  },
+  {
+    "slug": "htlc",
+    "title": "Hash Time Locked Contract (HTLC)",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "ptlc",
+      "adaptor-signatures",
+      "schnorr-signatures",
+      "htlc-endorsement",
+      "hwi"
+    ],
+    "charCount": 2323
+  },
+  {
+    "slug": "hold-invoices",
+    "title": "Hold invoices",
+    "domain": "lightning",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "channel-jamming-attacks",
+      "hd-key-generation",
+      "htlc-endorsement"
+    ],
+    "charCount": 544
+  },
+  {
+    "slug": "htlc-endorsement",
+    "title": "HTLC endorsement",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "channel-jamming-attacks",
+      "hold-invoices",
+      "htlc"
+    ],
+    "charCount": 1121
+  },
+  {
+    "slug": "inbound-forwarding-fees",
+    "title": "Inbound forwarding fees",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "hwi",
+      "jit-channels"
+    ],
+    "charCount": 4654
+  },
+  {
+    "slug": "jit-channels",
+    "title": "Just-In-Time (JIT) channels",
+    "domain": "lightning",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "jit-routing",
+      "inbound-forwarding-fees"
+    ],
+    "charCount": 469
+  },
+  {
+    "slug": "jit-routing",
+    "title": "Just-in-time (JIT) routing",
+    "domain": "lightning",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "jit-channels",
+      "joinpools"
+    ],
+    "charCount": 337
+  },
+  {
+    "slug": "spontaneous-payments",
+    "title": "Spontaneous payments",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "splicing",
+      "statechains"
+    ],
+    "charCount": 1214
+  },
+  {
+    "slug": "kindred-replace-by-fee",
+    "title": "Kindred replace by fee",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "joinpools",
+      "large-channels"
+    ],
+    "charCount": 439
+  },
+  {
+    "slug": "large-channels",
+    "title": "Large channels",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "multipath-payments",
+      "kindred-replace-by-fee",
+      "liquidity-advertisements"
+    ],
+    "charCount": 1589
+  },
+  {
+    "slug": "minisketch",
+    "title": "Minisketch",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "erlay",
+      "miniscript",
+      "multipath-payments"
+    ],
+    "charCount": 463
+  },
+  {
+    "slug": "lnurl",
+    "title": "LNURL",
+    "domain": "lightning",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "offers",
+      "ln-penalty",
+      "low-r-grinding"
+    ],
+    "charCount": 1181
+  },
+  {
+    "slug": "liquidity-advertisements",
+    "title": "Liquidity advertisements",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "dual-funding",
+      "large-channels",
+      "ln-penalty"
+    ],
+    "charCount": 499
+  },
+  {
+    "slug": "ln-penalty",
+    "title": "LN-Penalty",
+    "domain": "lightning",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "watchtowers",
+      "soft-fork-activation",
+      "eltoo",
+      "channel-factories",
+      "discreet-log-contracts",
+      "liquidity-advertisements",
+      "lnurl"
+    ],
+    "charCount": 4085
+  },
+  {
+    "slug": "low-r-grinding",
+    "title": "Low-r grinding",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "lnurl",
+      "mast"
+    ],
+    "charCount": 723
+  },
+  {
+    "slug": "mast",
+    "title": "MAST",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "low-r-grinding",
+      "matt"
+    ],
+    "charCount": 1273
+  },
+  {
+    "slug": "matt",
+    "title": "MATT",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "covenants",
+      "op_checktemplateverify",
+      "mast",
+      "merkle-tree-vulnerabilities"
+    ],
+    "charCount": 493
+  },
+  {
+    "slug": "merkle-tree-vulnerabilities",
+    "title": "Merkle tree vulnerabilities",
+    "domain": "network",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "eclipse-attacks",
+      "cve",
+      "consensus-cleanup-soft-fork",
+      "taproot",
+      "matt",
+      "miniscript"
+    ],
+    "charCount": 7318
+  },
+  {
+    "slug": "miniscript",
+    "title": "Miniscript",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "merkle-tree-vulnerabilities",
+      "minisketch"
+    ],
+    "charCount": 729
+  },
+  {
+    "slug": "musig",
+    "title": "MuSig",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "multisignature",
+      "schnorr-signatures",
+      "offers"
+    ],
+    "charCount": 1601
+  },
+  {
+    "slug": "onion-messages",
+    "title": "Onion messages",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "rendez-vous-routing",
+      "offers",
+      "op_cat"
+    ],
+    "charCount": 297
+  },
+  {
+    "slug": "op_cat",
+    "title": "OP_CAT",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "op_checksigfromstack",
+      "op_checktemplateverify",
+      "matt",
+      "onion-messages"
+    ],
+    "charCount": 2145
+  },
+  {
+    "slug": "op_checksigfromstack",
+    "title": "OP_CHECKSIGFROMSTACK",
+    "domain": "cryptography",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "sighash_anyprevout",
+      "op_checktemplateverify",
+      "covenants",
+      "vaults",
+      "op_cat"
+    ],
+    "charCount": 5420
+  },
+  {
+    "slug": "op_checktemplateverify",
+    "title": "OP_CHECKTEMPLATEVERIFY",
+    "domain": "script",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "channel-factories",
+      "vaults",
+      "discreet-log-contracts",
+      "adaptor-signatures",
+      "sighash_anyprevout",
+      "eltoo",
+      "op_cat",
+      "op_checksigfromstack",
+      "pay-to-contract-outputs",
+      "taproot",
+      "covenants",
+      "signet",
+      "fee-estimation",
+      "cpfp",
+      "fee-sourcing",
+      "out-of-band-fees",
+      "acc",
+      "op_codeseparator"
+    ],
+    "charCount": 11741
+  },
+  {
+    "slug": "op_codeseparator",
+    "title": "OP_CODESEPARATOR",
+    "domain": "script",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "tapscript",
+      "taproot",
+      "consensus-cleanup-soft-fork",
+      "op_checktemplateverify",
+      "out-of-band-fees"
+    ],
+    "charCount": 3865
+  },
+  {
+    "slug": "out-of-band-fees",
+    "title": "Out-of-band fees",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "replace-by-fee",
+      "cpfp",
+      "fee-sniping",
+      "op_codeseparator",
+      "output-linking"
+    ],
+    "charCount": 1858
+  },
+  {
+    "slug": "pay-to-contract-outputs",
+    "title": "Pay-to-Contract (P2C) protocols",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "proof-of-payment",
+      "taproot",
+      "package-relay",
+      "payjoin"
+    ],
+    "charCount": 593
+  },
+  {
+    "slug": "payment-probes",
+    "title": "Payment probes",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "jit-routing",
+      "channel-jamming-attacks",
+      "payment-batching",
+      "payment-secrets"
+    ],
+    "charCount": 587
+  },
+  {
+    "slug": "payment-secrets",
+    "title": "Payment secrets",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "multipath-payments",
+      "payment-probes",
+      "peer-storage"
+    ],
+    "charCount": 423
+  },
+  {
+    "slug": "peer-storage",
+    "title": "Peer storage",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "payment-secrets",
+      "pooled-mining"
+    ],
+    "charCount": 538
+  },
+  {
+    "slug": "ptlc",
+    "title": "Point Time Locked Contracts (PTLCs)",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "adaptor-signatures",
+      "schnorr-signatures",
+      "psbt",
+      "quantum-resistance"
+    ],
+    "charCount": 2149
+  },
+  {
+    "slug": "quantum-resistance",
+    "title": "Quantum resistance",
+    "domain": "cryptography",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "taproot",
+      "v2-p2p-transport",
+      "ptlc",
+      "redundant-overpayments"
+    ],
+    "charCount": 2570
+  },
+  {
+    "slug": "unannounced-channels",
+    "title": "Unannounced channels",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "rendez-vous-routing",
+      "trimmed-htlc",
+      "uneconomical-outputs"
+    ],
+    "charCount": 524
+  },
+  {
+    "slug": "probabilistic-payments",
+    "title": "Probabilistic payments",
+    "domain": "lightning",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "uneconomical-outputs",
+      "trimmed-htlc",
+      "pooled-mining",
+      "proof-of-payment"
+    ],
+    "charCount": 779
+  },
+  {
+    "slug": "proof-of-payment",
+    "title": "Proof of payment",
+    "domain": "lightning",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "pay-to-contract-outputs",
+      "probabilistic-payments",
+      "proof-of-reserves"
+    ],
+    "charCount": 412
+  },
+  {
+    "slug": "proof-of-reserves",
+    "title": "Proof of reserves",
+    "domain": "cryptography",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "proof-of-payment",
+      "psbt"
+    ],
+    "charCount": 2397
+  },
+  {
+    "slug": "replacement-cycling",
+    "title": "Replacement cycling",
+    "domain": "transactions",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "cpfp",
+      "replace-by-fee",
+      "htlc",
+      "cltv-expiry-delta",
+      "reproducible-builds"
+    ],
+    "charCount": 2963
+  },
+  {
+    "slug": "responsible-disclosures",
+    "title": "Responsible disclosures",
+    "domain": "consensus",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "cve",
+      "reproducible-builds",
+      "schnorr-signatures"
+    ],
+    "charCount": 727
+  },
+  {
+    "slug": "schnorr-signatures",
+    "title": "Schnorr signatures",
+    "domain": "cryptography",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "musig",
+      "taproot",
+      "multisignature",
+      "responsible-disclosures",
+      "segregated-witness"
+    ],
+    "charCount": 575
+  },
+  {
+    "slug": "segregated-witness",
+    "title": "Segregated witness",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "bech32",
+      "schnorr-signatures",
+      "selfish-mining"
+    ],
+    "charCount": 194
+  },
+  {
+    "slug": "selfish-mining",
+    "title": "Selfish mining",
+    "domain": "mining",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "segregated-witness",
+      "side-channels"
+    ],
+    "charCount": 1757
+  },
+  {
+    "slug": "side-channels",
+    "title": "Side channels",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "exfiltration-resistant-signing",
+      "selfish-mining",
+      "sidechains"
+    ],
+    "charCount": 313
+  },
+  {
+    "slug": "sidechains",
+    "title": "Sidechains",
+    "domain": "privacy",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "side-channels",
+      "sighash_anyprevout"
+    ],
+    "charCount": 961
+  },
+  {
+    "slug": "sighash_anyprevout",
+    "title": "SIGHASH_ANYPREVOUT",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "eltoo",
+      "covenants",
+      "sidechains",
+      "signer-delegation"
+    ],
+    "charCount": 389
+  },
+  {
+    "slug": "signet",
+    "title": "Signet",
+    "domain": "network",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "signer-delegation",
+      "silent-payments"
+    ],
+    "charCount": 616
+  },
+  {
+    "slug": "silent-payments",
+    "title": "Silent payments",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "output-linking",
+      "coinjoin",
+      "signet",
+      "simple-taproot-channels"
+    ],
+    "charCount": 1634
+  },
+  {
+    "slug": "simple-taproot-channels",
+    "title": "Simple taproot channels",
+    "domain": "lightning",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "ptlc",
+      "taproot",
+      "musig",
+      "silent-payments",
+      "simplicity"
+    ],
+    "charCount": 625
+  },
+  {
+    "slug": "simplicity",
+    "title": "Simplicity",
+    "domain": "consensus",
+    "difficulty": 5,
+    "alsoCovers": [],
+    "related": [
+      "sighash_anyprevout",
+      "covenants",
+      "basic-bitcoin-lisp-language",
+      "simple-taproot-channels",
+      "soft-fork-activation"
+    ],
+    "charCount": 1875
+  },
+  {
+    "slug": "splicing",
+    "title": "Splicing",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "submarine-swaps",
+      "dual-funding",
+      "soft-fork-activation",
+      "spontaneous-payments"
+    ],
+    "charCount": 1309
+  },
+  {
+    "slug": "statechains",
+    "title": "Statechains",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "eltoo",
+      "sidechains",
+      "schnorr-signatures",
+      "multisignature",
+      "signer-delegation",
+      "spontaneous-payments",
+      "stateless-invoices"
+    ],
+    "charCount": 1465
+  },
+  {
+    "slug": "stateless-invoices",
+    "title": "Stateless invoices",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "offers",
+      "statechains",
+      "static-channel-backups"
+    ],
+    "charCount": 394
+  },
+  {
+    "slug": "static-channel-backups",
+    "title": "Static channel backups",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "stateless-invoices",
+      "submarine-swaps"
+    ],
+    "charCount": 1333
+  },
+  {
+    "slug": "submarine-swaps",
+    "title": "Submarine swaps",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "splicing",
+      "static-channel-backups",
+      "swap-in-potentiam"
+    ],
+    "charCount": 451
+  },
+  {
+    "slug": "swap-in-potentiam",
+    "title": "Swap-in Potentiam (SIP)",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "submarine-swaps",
+      "taproot"
+    ],
+    "charCount": 1291
+  },
+  {
+    "slug": "taproot",
+    "title": "Taproot",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "musig",
+      "mast",
+      "tapscript",
+      "schnorr-signatures",
+      "pay-to-contract-outputs",
+      "swap-in-potentiam"
+    ],
+    "charCount": 563
+  },
+  {
+    "slug": "tapscript",
+    "title": "Tapscript",
+    "domain": "script",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "testnet"
+    ],
+    "charCount": 521
+  },
+  {
+    "slug": "testnet",
+    "title": "Testnet",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "signet",
+      "tapscript",
+      "threshold-signature"
+    ],
+    "charCount": 399
+  },
+  {
+    "slug": "threshold-signature",
+    "title": "Threshold signature",
+    "domain": "cryptography",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "multisignature",
+      "tapscript",
+      "taproot",
+      "threshold-signature",
+      "testnet",
+      "time-warp"
+    ],
+    "charCount": 3894
+  },
+  {
+    "slug": "time-warp",
+    "title": "Time warp",
+    "domain": "mining",
+    "difficulty": 4,
+    "alsoCovers": [],
+    "related": [
+      "timelocks",
+      "eclipse-attacks",
+      "consensus-cleanup-soft-fork",
+      "threshold-signature"
+    ],
+    "charCount": 5536
+  },
+  {
+    "slug": "timelocks",
+    "title": "Timelocks",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "ptlc",
+      "time-warp",
+      "timeout-trees"
+    ],
+    "charCount": 269
+  },
+  {
+    "slug": "timeout-trees",
+    "title": "Timeout trees",
+    "domain": "consensus",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "joinpools",
+      "covenants",
+      "ark",
+      "timelocks",
+      "trampoline-payments"
+    ],
+    "charCount": 2476
+  },
+  {
+    "slug": "version-3-transaction-relay",
+    "title": "Version 3 transaction relay",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "replace-by-fee",
+      "package-relay",
+      "transaction-pinning",
+      "cpfp-carve-out",
+      "ephemeral-anchors",
+      "vaults",
+      "wallet-labels"
+    ],
+    "charCount": 936
+  },
+  {
+    "slug": "trampoline-payments",
+    "title": "Trampoline payments",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "timeout-trees",
+      "transaction-bloom-filtering"
+    ],
+    "charCount": 929
+  },
+  {
+    "slug": "transaction-origin-privacy",
+    "title": "Transaction origin privacy",
+    "domain": "network",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "anonymity-networks",
+      "v2-p2p-transport",
+      "dandelion",
+      "transaction-bloom-filtering",
+      "transaction-pinning"
+    ],
+    "charCount": 2496
+  },
+  {
+    "slug": "transaction-pinning",
+    "title": "Transaction pinning",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "cpfp-carve-out",
+      "ephemeral-anchors",
+      "transaction-origin-privacy",
+      "transitory-soft-forks"
+    ],
+    "charCount": 1925
+  },
+  {
+    "slug": "transitory-soft-forks",
+    "title": "Transitory soft forks",
+    "domain": "consensus",
+    "difficulty": 1,
+    "alsoCovers": [],
+    "related": [
+      "op_checktemplateverify",
+      "transaction-pinning",
+      "trimmed-htlc"
+    ],
+    "charCount": 600
+  },
+  {
+    "slug": "trimmed-htlc",
+    "title": "Trimmed HTLC",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "transitory-soft-forks",
+      "unannounced-channels"
+    ],
+    "charCount": 1183
+  },
+  {
+    "slug": "utreexo",
+    "title": "Utreexo",
+    "domain": "transactions",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "uneconomical-outputs",
+      "v2-p2p-transport"
+    ],
+    "charCount": 624
+  },
+  {
+    "slug": "v3-commitments",
+    "title": "V3 commitments",
+    "domain": "transactions",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "htlc",
+      "ln-penalty",
+      "fee-sourcing",
+      "anchor-outputs",
+      "cpfp",
+      "default-minimum-transaction-relay-feerates",
+      "cpfp-carve-out",
+      "cluster-mempool",
+      "version-3-transaction-relay",
+      "package-relay",
+      "ephemeral-anchors",
+      "kindred-replace-by-fee",
+      "uneconomical-outputs",
+      "channel-commitment-upgrades",
+      "v2-p2p-transport",
+      "vaults"
+    ],
+    "charCount": 3559
+  },
+  {
+    "slug": "vaults",
+    "title": "Vaults",
+    "domain": "cryptography",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "covenants",
+      "v3-commitments",
+      "version-3-transaction-relay"
+    ],
+    "charCount": 1207
+  },
+  {
+    "slug": "wallet-labels",
+    "title": "Wallet labels",
+    "domain": "wallets",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "output-script-descriptors",
+      "output-linking",
+      "version-3-transaction-relay",
+      "watchtowers"
+    ],
+    "charCount": 429
+  },
+  {
+    "slug": "watchtowers",
+    "title": "Watchtowers",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "vaults",
+      "static-channel-backups",
+      "wallet-labels",
+      "x-only-public-keys"
+    ],
+    "charCount": 1117
+  },
+  {
+    "slug": "x-only-public-keys",
+    "title": "X-only public keys",
+    "domain": "script",
+    "difficulty": 3,
+    "alsoCovers": [],
+    "related": [
+      "taproot",
+      "tapscript",
+      "covenants",
+      "mast",
+      "schnorr-signatures",
+      "watchtowers",
+      "zero-conf-channels"
+    ],
+    "charCount": 1838
+  },
+  {
+    "slug": "zero-conf-channels",
+    "title": "Zero-conf channels",
+    "domain": "lightning",
+    "difficulty": 2,
+    "alsoCovers": [],
+    "related": [
+      "jit-channels",
+      "x-only-public-keys",
+      "acc"
+    ],
+    "charCount": 892
+  }
+]
