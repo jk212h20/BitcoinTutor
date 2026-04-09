@@ -409,9 +409,11 @@
       if (authPollingInterval) clearInterval(authPollingInterval);
       
       let attempts = 0;
+      let authHandled = false; // Guard against multiple async callbacks
       authPollingInterval = setInterval(async () => {
+        if (authHandled) return; // Already handled, skip
         attempts++;
-        if (attempts > 150) { // 5 minutes at 2-second intervals
+        if (attempts > 150) {
           clearInterval(authPollingInterval);
           const statusEl = document.getElementById('qrStatus');
           if (statusEl) statusEl.textContent = 'Login expired. Send a message to try again.';
@@ -422,7 +424,8 @@
           const res = await fetch(`/api/auth/status/${k1}`);
           const data = await res.json();
           
-          if (data.status === 'authenticated') {
+          if (data.status === 'authenticated' && !authHandled) {
+            authHandled = true; // Set IMMEDIATELY before any async work
             clearInterval(authPollingInterval);
             isLoggedIn = true;
             
@@ -440,7 +443,7 @@
               if (qr) qr.remove();
             }, 2000);
             
-            // Notify the tutor about the login
+            // Notify the tutor about the login (only once!)
             showLoading();
             const notifyRes = await fetch('/api/auth/notify', {
               method: 'POST',
