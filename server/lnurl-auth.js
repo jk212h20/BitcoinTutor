@@ -105,8 +105,8 @@ function verifySignature(k1, sigHex, pubkeyHex) {
   const sigBuffer = Buffer.from(sigHex, 'hex');
   const pubkeyBuffer = Buffer.from(pubkeyHex, 'hex');
   
-  // Hash the k1 challenge
-  const messageHash = crypto.createHash('sha256').update(k1Buffer).digest();
+  // LNURL-auth spec: k1 IS the 32-byte message hash — do NOT hash it again
+  // The wallet signs k1 directly (it's already a random 32-byte challenge)
   
   // The signature from LNURL-auth is DER encoded
   let sigCompact;
@@ -120,7 +120,7 @@ function verifySignature(k1, sigHex, pubkeyHex) {
     }
   }
   
-  return secp256k1.ecdsaVerify(sigCompact, messageHash, pubkeyBuffer);
+  return secp256k1.ecdsaVerify(sigCompact, k1Buffer, pubkeyBuffer);
 }
 
 // === Bech32/LNURL encoding ===
