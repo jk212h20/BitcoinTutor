@@ -495,7 +495,12 @@
     
     async function sendMessage() {
       const text = inputEl.value.trim();
-      if (!text || isLoading || !sessionId) return;
+      if (!text || isLoading) return;
+      
+      if (!sessionId) {
+        console.warn('No session yet, waiting...');
+        return;
+      }
       
       isLoading = true;
       addMessage(text, 'user');
@@ -504,19 +509,49 @@
       showLoading();
       
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+        
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, message: text }),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
+        
         const data = await res.json();
         
         if (data.error) {
           if (res.status === 404) {
             hideLoading();
             isLoading = false;
-            addMessage("Looks like your session expired. Let me start fresh!", 'bot');
+            addMessage("Session expired — starting fresh and resending your message...", 'system');
             await startNewChat();
+            // Re-send the user's message in the new session
+            if (sessionId && text) {
+              isLoading = true;
+              setInputEnabled(false);
+              showLoading();
+              try {
+                const retry = await fetch('/api/chat', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ sessionId, message: text }),
+                });
+                const retryData = await retry.json();
+                hideLoading();
+                if (retryData.message) {
+                  addMessage(retryData.message, 'bot');
+                  handleActions(retryData.actions);
+                }
+              } catch (retryErr) {
+                hideLoading();
+                console.error('Retry failed:', retryErr);
+              }
+              isLoading = false;
+              setInputEnabled(true);
+            }
             return;
           }
           throw new Error(data.error);
@@ -532,7 +567,11 @@
         }
       } catch (err) {
         hideLoading();
-        addMessage('Sorry, something went wrong. Try sending again.', 'bot');
+        if (err.name === 'AbortError') {
+          addMessage('That took too long — the tutor might be thinking hard! Try again.', 'bot');
+        } else {
+          addMessage('Sorry, something went wrong. Try sending again.', 'bot');
+        }
         console.error('Chat error:', err);
       }
       

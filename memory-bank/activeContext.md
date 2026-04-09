@@ -29,16 +29,27 @@ Evolved from "Bitcoin Quiz" to "Bitcoin Tutor" with full user system:
 - **Faucet**: Tutor has `send_sats` tool, sees balance in system prompt, tips for great answers (max 100/tip, 500/session, 5000/day)
 - **Conversation persistence**: Messages + knowledge profile saved to DB for logged-in users
 
+## Deployment
+- **Production URL**: https://bitcointutor-production.up.railway.app
+- **GitHub**: https://github.com/jk212h20/BitcoinTutor
+- **Railway project**: `e9592122-148a-471a-8fe2-593ee23d4d5b`
+- **Railway service**: `f370ab8c-e7a1-491e-bc54-c77f522b13d5`
+- **Env vars on Railway**: BASE_URL, PPQ_API_KEY, PORT (3456), MODEL
+
 ## Configuration
 - Port: 3456
 - Model: `claude-sonnet-4.6` via PPQ.ai gateway
-- DB: `data/tutor.db` (SQLite via sql.js)
+- DB: `data/tutor.db` (SQLite via sql.js) — needs Railway volume at `/data` for persistence
 - Faucet: 21,000 sats balance, configurable via env vars
-- BASE_URL defaults to localhost (must set for deploy for LNURL callback)
+
+## Live Blockchain Tools (added 2026-04-09)
+- `server/blockchain.js` — 11 tools querying mempool.space + Blockchair APIs
+- Tools: latest_block, recent_blocks, mempool, fees, address, transaction, block, mining_pools, hashrate, network_stats, halving_info
+- Smart caching (30s-5min TTL) to avoid hammering APIs
+- Tutor uses these proactively when discussing real-time Bitcoin state
 
 ## What's Next
-- [ ] Deploy to Railway (set PPQ_API_KEY, BASE_URL, DATABASE_PATH env vars)
-- [ ] Mount volume for `/data` on Railway
+- [ ] Mount volume for `/data` on Railway (DB resets on redeploy without it)
 - [ ] Add actual Lightning payment for faucet tips (currently just DB tracking)
 - [ ] Process Mastering Bitcoin chapters into supplementary knowledge
 - [ ] Track knowledge profile more formally

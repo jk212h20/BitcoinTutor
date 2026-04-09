@@ -15,6 +15,18 @@ const blockchain = require('./blockchain');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    const start = Date.now();
+    res.on('finish', () => {
+      console.log(`${req.method} ${req.path} → ${res.statusCode} (${Date.now() - start}ms)`);
+    });
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Config
@@ -338,8 +350,13 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
         toolResults += `\n[Related to "${call.slug}"]: ${related.map(r => r.title).join(', ') || 'none found'}\n`;
       } else if (blockchainActions.includes(call.action)) {
         // Live blockchain data
-        const result = await blockchain.executeBlockchainTool(call);
-        toolResults += `\n[Blockchain: ${call.action}]\n${result}\n`;
+        try {
+          const result = await blockchain.executeBlockchainTool(call);
+          toolResults += `\n[Blockchain: ${call.action}]\n${result}\n`;
+        } catch (bcErr) {
+          console.error(`Blockchain tool ${call.action} failed:`, bcErr.message);
+          toolResults += `\n[Blockchain: ${call.action}] Error: data temporarily unavailable\n`;
+        }
       }
     }
 
