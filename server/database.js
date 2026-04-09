@@ -47,11 +47,19 @@ async function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pubkey TEXT UNIQUE NOT NULL,
       display_name TEXT,
+      notes TEXT DEFAULT '{}',
       created_at TEXT DEFAULT (datetime('now')),
       last_login TEXT DEFAULT (datetime('now')),
       sats_received INTEGER DEFAULT 0
     )
   `);
+  
+  // Migration: add notes column if missing
+  try {
+    db.exec("SELECT notes FROM users LIMIT 0");
+  } catch (e) {
+    db.run("ALTER TABLE users ADD COLUMN notes TEXT DEFAULT '{}'");
+  }
   
   db.run(`
     CREATE TABLE IF NOT EXISTS conversations (
@@ -184,6 +192,25 @@ function updateLastLogin(userId) {
   saveDatabase();
 }
 
+function getUserNotes(userId) {
+  if (!userId) return {};
+  const stmt = db.prepare('SELECT notes FROM users WHERE id = ?');
+  stmt.bind([userId]);
+  if (stmt.step()) {
+    const row = stmt.getAsObject();
+    stmt.free();
+    try { return JSON.parse(row.notes || '{}'); } catch { return {}; }
+  }
+  stmt.free();
+  return {};
+}
+
+function updateUserNotes(userId, notes) {
+  if (!userId) return;
+  db.run(`UPDATE users SET notes = ? WHERE id = ?`, [JSON.stringify(notes), userId]);
+  saveDatabase();
+}
+
 // === Auth Challenges ===
 
 function createChallenge(k1, expiresAt, sessionId, visitorId) {
@@ -296,6 +323,8 @@ module.exports = {
   getUserById,
   createUser,
   updateLastLogin,
+  getUserNotes,
+  updateUserNotes,
   // Auth
   createChallenge,
   getValidChallenge,

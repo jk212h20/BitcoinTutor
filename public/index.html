@@ -249,6 +249,18 @@
     .messages::-webkit-scrollbar-track { background: transparent; }
     .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     
+    /* Model info bar */
+    .model-info {
+      padding: 4px 20px;
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.5;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    
     @media (max-width: 600px) {
       .message { padding: 12px 14px; font-size: 14px; }
       .header .subtitle { display: none; }
@@ -263,6 +275,7 @@
     <span class="subtitle">Adaptive Socratic tutor</span>
     <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
   </div>
+  <div class="model-info" id="modelInfo"></div>
   
   <div class="messages" id="messages"></div>
   
@@ -284,6 +297,15 @@
     const inputEl = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
     const loginIndicator = document.getElementById('loginIndicator');
+    const modelInfoEl = document.getElementById('modelInfo');
+    
+    function updateModelInfo(data) {
+      if (!data) return;
+      const model = data.model || '';
+      const tokens = data.tokenUsage?.total || 0;
+      const fmt = tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'k' : tokens.toString();
+      modelInfoEl.textContent = tokens > 0 ? `${model} · ${fmt} tokens` : model;
+    }
     
     // === Visitor ID (localStorage fingerprint) ===
     function getVisitorId() {
@@ -487,6 +509,7 @@
         hideLoading();
         addMessage(data.message, 'bot');
         handleActions(data.actions);
+        updateModelInfo(data);
         setInputEnabled(true);
       } catch (err) {
         hideLoading();
@@ -563,6 +586,7 @@
         hideLoading();
         addMessage(data.message, 'bot');
         handleActions(data.actions);
+        updateModelInfo(data);
         
         if (data.isLoggedIn && !isLoggedIn) {
           isLoggedIn = true;
