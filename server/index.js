@@ -10,6 +10,7 @@ const fetch = require('node-fetch');
 const knowledge = require('./knowledge');
 const database = require('./database');
 const lnurlAuth = require('./lnurl-auth');
+const blockchain = require('./blockchain');
 
 const app = express();
 app.use(cors());
@@ -191,7 +192,24 @@ To show login QR (only when user is interested):
 ${session.userId ? `To tip sats (only for logged-in users with great answers):
 <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>` : ''}
 
-IMPORTANT: Use knowledge tools to ground your facts. When asking about a concept, look it up first.`;
+## 🔗 Live Blockchain Data Tools
+You can query the REAL Bitcoin blockchain in real-time! Use these when the conversation touches on current network state, or when a student asks about what's happening on-chain right now. These make great teaching moments — show real data, then explain what it means.
+
+<tool>{"action": "latest_block"}</tool> — Get the most recent block (height, size, tx count, miner, fullness)
+<tool>{"action": "recent_blocks", "count": 5}</tool> — Last N blocks summary
+<tool>{"action": "mempool"}</tool> — Current mempool stats (pending txs, size, fees)
+<tool>{"action": "fees"}</tool> — Current fee estimates (sat/vB for different speeds)
+<tool>{"action": "address", "address": "1A1z..."}</tool> — Look up any Bitcoin address (balance, tx count)
+<tool>{"action": "transaction", "txid": "abc123..."}</tool> — Look up any transaction
+<tool>{"action": "block", "height": 840000}</tool> — Look up a specific block by height or hash
+<tool>{"action": "mining_pools", "period": "1w"}</tool> — Mining pool distribution (1d/1w/1m)
+<tool>{"action": "hashrate"}</tool> — Current hashrate and difficulty
+<tool>{"action": "network_stats"}</tool> — Overall network stats (price, supply, inflation rate)
+<tool>{"action": "halving_info"}</tool> — Halving schedule and history
+
+Use these proactively! If discussing mining, pull up real mining pools. If discussing fees, show current fees. If they ask "what's happening on Bitcoin right now?", pull up the latest block and mempool. Real data makes concepts click.
+
+IMPORTANT: Use knowledge tools to ground your facts. When asking about a concept, look it up first. Use blockchain tools for real-time data.`;
 }
 
 async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo = null) {
@@ -267,9 +285,10 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
     }
   }
 
-  // Separate special actions from knowledge lookups
+  // Separate special actions from knowledge/blockchain lookups
   let specialActions = [];
   let knowledgeCalls = [];
+  const blockchainActions = ['latest_block','recent_blocks','mempool','fees','address','transaction','block','mining_pools','hashrate','network_stats','halving_info'];
   for (const call of toolCalls) {
     if (call.action === 'show_login' || call.action === 'send_sats') {
       specialActions.push(call);
@@ -296,7 +315,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
     }
   }
 
-  // Handle knowledge lookups (re-call LLM with results)
+  // Handle knowledge + blockchain lookups (re-call LLM with results)
   if (knowledgeCalls.length > 0) {
     let toolResults = '';
     for (const call of knowledgeCalls) {
@@ -317,6 +336,10 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       } else if (call.action === 'related') {
         const related = knowledge.getRelatedTopics(call.slug);
         toolResults += `\n[Related to "${call.slug}"]: ${related.map(r => r.title).join(', ') || 'none found'}\n`;
+      } else if (blockchainActions.includes(call.action)) {
+        // Live blockchain data
+        const result = await blockchain.executeBlockchainTool(call);
+        toolResults += `\n[Blockchain: ${call.action}]\n${result}\n`;
       }
     }
 
