@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const PORT = process.env.PORT || 3456;
 const PPQ_API_KEY = process.env.PPQ_API_KEY || 'sk-sOIHBImdCmUYVIXsBnsXBN';
 const PPQ_BASE_URL = process.env.PPQ_BASE_URL || 'https://api.ppq.ai/v1';
-const MODEL = process.env.MODEL || 'anthropic/claude-sonnet-4';
+const MODEL = process.env.MODEL || 'claude-sonnet-4.6';
 
 // Load knowledge base
 knowledge.loadKnowledge();
