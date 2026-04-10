@@ -227,6 +227,110 @@ async function getNetworkStats() {
   });
 }
 
+// === Price ===
+
+/** Get current Bitcoin price */
+async function getPrice() {
+  return cached('price', 120000, async () => {
+    const res = await fetch(`${BLOCKCHAIR_BASE}/stats`);
+    const data = await res.json();
+    const s = data.data;
+    return {
+      price_usd: s.market_price_usd,
+      market_cap_usd: s.market_cap_usd,
+      note: 'Price data from Blockchair. Bitcoin is a volatile asset — this is a snapshot.',
+    };
+  });
+}
+
+// === Block transactions analysis ===
+
+/** Get transactions from a specific block with analysis (largest, fees) */
+async function getBlockTxs(heightOrHash) {
+  let hash = heightOrHash;
+  if (/^\d+$/.test(String(heightOrHash))) {
+    const hashRes = await fetch(`${MEMPOOL_BASE}/block-height/${heightOrHash}`);
+    if (!hashRes.ok) return { error: `Block not found at height ${heightOrHash}` };
+    hash = await hashRes.text();
+  }
+  
+  // Get block details
+  const blockRes = await fetch(`${MEMPOOL_BASE}/block/${hash}`);
+  if (!blockRes.ok) return { error: `Block not found: ${hash}` };
+  const block = await blockRes.json();
+  
+  // Get txids list
+  const txidsRes = await fetch(`${MEMPOOL_BASE}/block/${hash}/txids`);
+  if (!txidsRes.ok) return { error: 'Could not fetch block transactions' };
+  const txids = await txidsRes.json();
+  
+  // Fetch first 25 txs (to find notable ones — full block would be too many API calls)
+  // But mempool.space has a bulk endpoint: /block/:hash/txs/:startIndex
+  const txsRes = await fetch(`${MEMPOOL_BASE}/block/${hash}/txs/0`);
+  const txs = await txsRes.json();
+  
+  // Sort by output value to find largest
+  const analyzed = txs.map(tx => {
+    const totalOutput = tx.vout.reduce((sum, v) => sum + v.value, 0);
+    return {
+      txid: tx.txid,
+      total_output_btc: (totalOutput / 100000000).toFixed(8),
+      total_output_sats: totalOutput,
+      fee_sats: tx.fee,
+      fee_rate_sat_vb: parseFloat((tx.fee / (tx.weight / 4)).toFixed(1)),
+      input_count: tx.vin.length,
+      output_count: tx.vout.length,
+      size_bytes: tx.size,
+      is_coinbase: tx.vin[0]?.is_coinbase || false,
+    };
+  });
+  
+  // Sort by value
+  const byValue = [...analyzed].filter(t => !t.is_coinbase).sort((a, b) => b.total_output_sats - a.total_output_sats);
+  const byFee = [...analyzed].filter(t => !t.is_coinbase).sort((a, b) => b.fee_sats - a.fee_sats);
+  const byFeeRate = [...analyzed].filter(t => !t.is_coinbase).sort((a, b) => b.fee_rate_sat_vb - a.fee_rate_sat_vb);
+  
+  // Fee stats
+  const fees = analyzed.filter(t => !t.is_coinbase).map(t => t.fee_rate_sat_vb);
+  const avgFeeRate = fees.length > 0 ? (fees.reduce((a, b) => a + b, 0) / fees.length).toFixed(1) : 0;
+  const medianFeeRate = fees.length > 0 ? fees.sort((a, b) => a - b)[Math.floor(fees.length / 2)].toFixed(1) : 0;
+  const totalFees = analyzed.reduce((sum, t) => sum + t.fee_sats, 0);
+  
+  return {
+    block_height: block.height,
+    block_hash: block.id,
+    total_txs: block.tx_count,
+    analyzed_txs: analyzed.length,
+    fee_summary: {
+      total_fees_btc: (totalFees / 100000000).toFixed(8),
+      total_fees_sats: totalFees,
+      avg_fee_rate_sat_vb: parseFloat(avgFeeRate),
+      median_fee_rate_sat_vb: parseFloat(medianFeeRate),
+      min_fee_rate: fees.length > 0 ? Math.min(...fees) : 0,
+      max_fee_rate: fees.length > 0 ? Math.max(...fees) : 0,
+    },
+    largest_by_value: byValue.slice(0, 5).map(t => ({
+      txid: t.txid,
+      btc: t.total_output_btc,
+      fee_sats: t.fee_sats,
+      inputs: t.input_count,
+      outputs: t.output_count,
+    })),
+    highest_fee_txs: byFee.slice(0, 5).map(t => ({
+      txid: t.txid,
+      fee_sats: t.fee_sats,
+      fee_rate: t.fee_rate_sat_vb,
+      btc: t.total_output_btc,
+    })),
+    highest_fee_rate_txs: byFeeRate.slice(0, 3).map(t => ({
+      txid: t.txid,
+      fee_rate: t.fee_rate_sat_vb,
+      fee_sats: t.fee_sats,
+    })),
+    miner: block.extras?.pool?.name || 'Unknown',
+  };
+}
+
 // === Halving info (computed) ===
 
 function getHalvingInfo() {
@@ -295,6 +399,13 @@ async function executeBlockchainTool(call) {
       
       case 'halving_info':
         return JSON.stringify(getHalvingInfo(), null, 2);
+      
+      case 'price':
+        return JSON.stringify(await getPrice(), null, 2);
+      
+      case 'block_txs':
+        if (!call.height && !call.hash) return 'Error: height or hash parameter required';
+        return JSON.stringify(await getBlockTxs(call.height || call.hash), null, 2);
       
       default:
         return `Unknown blockchain action: ${call.action}`;

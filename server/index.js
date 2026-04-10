@@ -284,6 +284,8 @@ Include JSON tool calls in your response. The system executes them and provides 
 <tool>{"action": "address", "address": "1A1z..."}</tool> <tool>{"action": "transaction", "txid": "..."}</tool>
 <tool>{"action": "block", "height": 840000}</tool> <tool>{"action": "mining_pools", "period": "1w"}</tool>
 <tool>{"action": "hashrate"}</tool> <tool>{"action": "network_stats"}</tool> <tool>{"action": "halving_info"}</tool>
+<tool>{"action": "price"}</tool> — Current BTC price + market cap
+<tool>{"action": "block_txs", "height": 840000}</tool> — Analyze a block's transactions: largest by value, highest fees, fee distribution
 Use blockchain tools proactively when discussing real-time Bitcoin state!
 
 **Generate donation invoice** (when someone wants to support Bitcoin Rabbit Hole or donate sats):
@@ -382,7 +384,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
   let specialActions = [];
   let knowledgeCalls = [];
   let notesUpdate = null;
-  const blockchainActions = ['latest_block','recent_blocks','mempool','fees','address','transaction','block','mining_pools','hashrate','network_stats','halving_info'];
+  const blockchainActions = ['latest_block','recent_blocks','mempool','fees','address','transaction','block','mining_pools','hashrate','network_stats','halving_info','price','block_txs'];
   
   for (const call of toolCalls) {
     if (call.action === 'show_login' || call.action === 'send_sats' || call.action === 'create_donation') {
