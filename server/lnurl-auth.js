@@ -185,4 +185,5 @@ function bech32Encode(hrp, data) {
 module.exports = {
   generateChallenge,
   verifyCallback,
+  encodeLnurl,
 };

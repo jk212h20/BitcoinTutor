@@ -367,6 +367,7 @@
           showLoginQR();
         } else if (action.type === 'tip') {
           addMessage(`⚡ The tutor just sent you ${action.amount} sats! "${action.reason}"`, 'system');
+          checkBalance(); // Update balance display after tip
         }
       }
     }
@@ -484,6 +485,105 @@
           // Silently retry
         }
       }, 2000);
+    }
+    
+    // === Balance & Claim ===
+    let satBalance = 0;
+    
+    async function checkBalance() {
+      if (!sessionId || !isLoggedIn) return;
+      try {
+        const res = await fetch(`/api/balance/${sessionId}`);
+        const data = await res.json();
+        satBalance = data.balance || 0;
+        updateBalanceUI();
+      } catch (e) { /* silent */ }
+    }
+    
+    function updateBalanceUI() {
+      const existing = document.getElementById('balanceIndicator');
+      if (satBalance > 0 && isLoggedIn) {
+        if (!existing) {
+          const el = document.createElement('span');
+          el.id = 'balanceIndicator';
+          el.style.cssText = 'font-size:12px;padding:4px 10px;border-radius:12px;background:#2a1a00;border:1px solid var(--accent);color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-left:8px;';
+          el.onclick = claimSats;
+          loginIndicator.insertAdjacentElement('afterend', el);
+        }
+        const el = document.getElementById('balanceIndicator');
+        el.textContent = `⚡ ${satBalance} sats — Claim`;
+      } else if (existing) {
+        existing.remove();
+      }
+    }
+    
+    async function claimSats() {
+      if (!sessionId || !isLoggedIn || satBalance <= 0) return;
+      
+      try {
+        const res = await fetch('/api/claim/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          addMessage(`Could not create withdraw: ${data.error}`, 'system');
+          return;
+        }
+        
+        // Show LNURL-withdraw QR
+        const qrDiv = document.createElement('div');
+        qrDiv.className = 'qr-container';
+        qrDiv.id = 'claimQR';
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + data.lnurl)}`;
+        
+        qrDiv.innerHTML = `
+          <h3>⚡ Claim ${data.amount} sats</h3>
+          <img src="${qrUrl}" alt="LNURL-withdraw QR" />
+          <div class="lnurl-text" onclick="navigator.clipboard.writeText('${data.lnurl}').then(()=>{this.textContent='Copied!'})" title="Click to copy">
+            ${data.lnurl.slice(0, 40)}...
+          </div>
+          <div class="qr-status" id="claimStatus">Scan with your Lightning wallet to receive sats...</div>
+          <div class="wallet-help">
+            <a href="${data.deepLink}">Open in wallet app</a>
+          </div>
+        `;
+        
+        messagesEl.appendChild(qrDiv);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        
+        // Poll claim status
+        let claimAttempts = 0;
+        const claimPoll = setInterval(async () => {
+          claimAttempts++;
+          if (claimAttempts > 150) {
+            clearInterval(claimPoll);
+            const el = document.getElementById('claimStatus');
+            if (el) el.textContent = 'Withdraw expired.';
+            return;
+          }
+          try {
+            const sr = await fetch(`/api/claim/status/${data.k1}`);
+            const sd = await sr.json();
+            const el = document.getElementById('claimStatus');
+            if (sd.status === 'complete') {
+              clearInterval(claimPoll);
+              if (el) { el.textContent = `✅ ${data.amount} sats sent to your wallet!`; el.className = 'qr-status success'; }
+              satBalance = 0;
+              updateBalanceUI();
+              setTimeout(() => { const qr = document.getElementById('claimQR'); if (qr) qr.remove(); }, 3000);
+            } else if (sd.status === 'failed') {
+              clearInterval(claimPoll);
+              if (el) el.textContent = `❌ Payment failed: ${sd.error}`;
+            }
+          } catch (e) { /* retry */ }
+        }, 2000);
+        
+      } catch (err) {
+        console.error('Claim error:', err);
+        addMessage('Failed to create withdraw. Try again.', 'system');
+      }
     }
     
     // === Chat functions ===

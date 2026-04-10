@@ -7,10 +7,12 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 const knowledge = require('./knowledge');
 const database = require('./database');
 const lnurlAuth = require('./lnurl-auth');
 const blockchain = require('./blockchain');
+const lightning = require('./lightning');
 
 const app = express();
 app.use(cors());
@@ -683,6 +685,130 @@ app.get('/api/knowledge/search', (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'q parameter required' });
   res.json(knowledge.searchTopics(q));
+});
+
+// === LNURL-withdraw (Real Lightning Payouts) ===
+
+const pendingWithdraws = new Map();
+
+// Clean up expired withdraw sessions every 2 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [k1, s] of pendingWithdraws) {
+    if (now - s.createdAt > 5 * 60 * 1000) pendingWithdraws.delete(k1);
+  }
+}, 2 * 60 * 1000);
+
+// Get user's claimable balance
+app.get('/api/balance/:sessionId', (req, res) => {
+  const session = sessions.get(req.params.sessionId);
+  if (!session || !session.userId) return res.json({ balance: 0 });
+  
+  const user = database.getUserById(session.userId);
+  res.json({ balance: user?.sats_received || 0 });
+});
+
+// Create a withdraw session — user taps "Claim sats"
+app.post('/api/claim/create', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const session = sessions.get(sessionId);
+    if (!session || !session.userId) return res.status(401).json({ error: 'Not logged in' });
+    
+    const user = database.getUserById(session.userId);
+    if (!user || user.sats_received <= 0) return res.status(400).json({ error: 'No sats to claim' });
+    
+    // Check Lightning node availability
+    const lnStatus = await lightning.isConfigured();
+    if (!lnStatus.configured) {
+      return res.status(503).json({ error: 'Lightning payments not available right now. Try again later.' });
+    }
+    
+    const amount = user.sats_received;
+    const k1 = crypto.randomBytes(32).toString('hex');
+    
+    pendingWithdraws.set(k1, {
+      userId: session.userId,
+      amount,
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+    
+    // Build LNURL-withdraw URL
+    const rawUrl = `${BASE_URL}/api/claim/lnurl?k1=${k1}`;
+    const lnurl = lnurlAuth.encodeLnurl(rawUrl);
+    
+    res.json({
+      k1,
+      lnurl,
+      deepLink: `lightning:${lnurl}`,
+      amount,
+    });
+  } catch (err) {
+    console.error('Claim create error:', err);
+    res.status(500).json({ error: 'Failed to create withdraw' });
+  }
+});
+
+// LNURL-withdraw step 1: wallet requests params (LUD-03)
+app.get('/api/claim/lnurl', (req, res) => {
+  const { k1 } = req.query;
+  const session = pendingWithdraws.get(k1);
+  if (!session) return res.json({ status: 'ERROR', reason: 'Withdraw expired or not found' });
+  if (session.status !== 'pending') return res.json({ status: 'ERROR', reason: 'Already processed' });
+  
+  res.json({
+    tag: 'withdrawRequest',
+    callback: `${BASE_URL}/api/claim/callback`,
+    k1,
+    defaultDescription: `Bitcoin Tutor: Claim ${session.amount} sats`,
+    minWithdrawable: session.amount * 1000,
+    maxWithdrawable: session.amount * 1000,
+  });
+});
+
+// LNURL-withdraw step 2: wallet sends invoice, server pays it (LUD-03)
+app.get('/api/claim/callback', (req, res) => {
+  const { k1, pr } = req.query;
+  if (!k1 || !pr) return res.json({ status: 'ERROR', reason: 'Missing k1 or pr' });
+  
+  const session = pendingWithdraws.get(k1);
+  if (!session) return res.json({ status: 'ERROR', reason: 'Withdraw expired' });
+  if (session.status !== 'pending') return res.json({ status: 'ERROR', reason: 'Already processed' });
+  
+  // Mark as paying to prevent double-spend
+  session.status = 'paying';
+  
+  // Respond OK immediately (prevents timeout)
+  res.json({ status: 'OK' });
+  
+  // Pay in background
+  (async () => {
+    try {
+      const result = await lightning.payInvoice(pr);
+      // Deduct from user's balance
+      database.deductSatsFromUser(session.userId, session.amount);
+      session.status = 'complete';
+      session.paymentHash = result.payment_hash;
+      console.log(`⚡ Paid ${session.amount} sats to user ${session.userId} (hash: ${result.payment_hash})`);
+    } catch (err) {
+      session.status = 'failed';
+      session.error = err.message;
+      console.error(`⚡ Withdraw payment failed for user ${session.userId}:`, err.message);
+    }
+  })();
+});
+
+// Poll withdraw status
+app.get('/api/claim/status/:k1', (req, res) => {
+  const session = pendingWithdraws.get(req.params.k1);
+  if (!session) return res.json({ status: 'expired' });
+  res.json({
+    status: session.status,
+    amount: session.amount,
+    paymentHash: session.paymentHash || null,
+    error: session.error || null,
+  });
 });
 
 // Start server

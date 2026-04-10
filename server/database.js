@@ -305,6 +305,10 @@ function getLastConversation(userId) {
 
 // === Faucet ===
 
+function deductSatsFromUser(userId, amount) {
+  db.run(`UPDATE users SET sats_received = MAX(0, sats_received - ?) WHERE id = ?`, [amount, userId]);
+}
+
 function recordTip(userId, sessionId, amount, reason) {
   db.run(`INSERT INTO faucet_tips (user_id, session_id, amount, reason) VALUES (?, ?, ?, ?)`,
     [userId, sessionId, amount, reason]);
@@ -363,6 +367,7 @@ module.exports = {
   getLastConversation,
   // Faucet
   recordTip,
+  deductSatsFromUser,
   getTipsForSession,
   getTotalTipsToday,
 };
