@@ -192,6 +192,33 @@ function updateLastLogin(userId) {
   saveDatabase();
 }
 
+function getDeliveredPrompts(userId) {
+  if (!userId) return [];
+  const stmt = db.prepare('SELECT notes FROM users WHERE id = ?');
+  stmt.bind([userId]);
+  if (stmt.step()) {
+    const row = stmt.getAsObject();
+    stmt.free();
+    try {
+      const notes = JSON.parse(row.notes || '{}');
+      return notes._delivered_prompts || [];
+    } catch { return []; }
+  }
+  stmt.free();
+  return [];
+}
+
+function markPromptDelivered(userId, promptId) {
+  if (!userId) return;
+  const notes = getUserNotes(userId);
+  const delivered = notes._delivered_prompts || [];
+  if (!delivered.includes(promptId)) {
+    delivered.push(promptId);
+    notes._delivered_prompts = delivered;
+    updateUserNotes(userId, notes);
+  }
+}
+
 function getUserNotes(userId) {
   if (!userId) return {};
   const stmt = db.prepare('SELECT notes FROM users WHERE id = ?');
@@ -325,6 +352,8 @@ module.exports = {
   updateLastLogin,
   getUserNotes,
   updateUserNotes,
+  getDeliveredPrompts,
+  markPromptDelivered,
   // Auth
   createChallenge,
   getValidChallenge,

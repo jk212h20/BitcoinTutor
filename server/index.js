@@ -44,6 +44,12 @@ const PREV_CONTEXT_MESSAGES = 20; // Max messages to inject from previous sessio
 // Load knowledge base
 knowledge.loadKnowledge();
 
+// Load one-time prompts
+const ONE_TIME_PROMPTS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'knowledge', 'prompts.json'), 'utf8')
+);
+console.log(`Loaded ${ONE_TIME_PROMPTS.length} one-time prompts`);
+
 // In-memory sessions
 const sessions = new Map();
 // Track auth results for polling
@@ -60,12 +66,50 @@ function createSession(visitorId) {
     messages: [],
     exchangeCount: 0,
     loginSuggested: false,
+    deliveredSessionPrompts: [], // Track session-scoped delivered prompts
     tokenUsage: { prompt: 0, completion: 0, total: 0 },
     created: Date.now(),
   };
   
   sessions.set(id, session);
   return session;
+}
+
+/**
+ * Evaluate which one-time prompts are active for this session.
+ * Returns prompts whose conditions are met AND haven't been delivered yet.
+ */
+function getActivePrompts(session, visitorInfo) {
+  // Get user-scoped delivered prompts from DB
+  const userDelivered = session.userId ? database.getDeliveredPrompts(session.userId) : [];
+  const sessionDelivered = session.deliveredSessionPrompts || [];
+  const allDelivered = [...userDelivered, ...sessionDelivered];
+  
+  const hasFaucet = session.userId && (() => {
+    const sessionTips = database.getTipsForSession(session.id);
+    const dailyTips = database.getTotalTipsToday();
+    return Math.max(0, Math.min(FAUCET_MAX_SESSION - sessionTips, FAUCET_MAX_DAILY - dailyTips, FAUCET_BALANCE - dailyTips)) > 0;
+  })();
+
+  return ONE_TIME_PROMPTS.filter(p => {
+    // Already delivered?
+    if (allDelivered.includes(p.id)) return false;
+    
+    // Evaluate condition
+    switch (p.condition) {
+      case 'after_first_login':
+        return session.userId && session.pubkey; // Just logged in this session
+      case 'returning_with_account':
+        return !session.userId && visitorInfo?.isReturning && visitorInfo?.linked_user_id;
+      case 'engaged_anonymous':
+        return !session.userId && session.exchangeCount >= 4 && !session.loginSuggested;
+      case 'logged_in_with_faucet':
+        return session.userId && hasFaucet;
+      default:
+        // Custom conditions: "always" means show if not delivered
+        return p.condition === 'always';
+    }
+  }).sort((a, b) => (a.priority || 99) - (b.priority || 99));
 }
 
 function buildSystemPrompt(session, visitorInfo) {
@@ -115,34 +159,32 @@ This person has visited ${visitorInfo.visit_count} times before but never logged
     }
   }
 
-  // Login suggestion context
+  // Login status
   let loginContext = '';
-  if (!session.userId) {
-    if (session.exchangeCount >= 4 && !session.loginSuggested) {
-      loginContext = `\n## 💡 Login Suggestion Available
-The conversation is going well (${session.exchangeCount} exchanges). When it feels natural, suggest saving progress by logging in with a Lightning wallet. To trigger: <tool>{"action": "show_login"}</tool>
-ONLY use this when the user is interested. Don't push it.`;
-    }
-  } else {
+  if (session.userId) {
     loginContext = `\n## ✅ User is Logged In
 Pubkey: ${session.pubkey ? session.pubkey.slice(0, 16) + '...' : 'unknown'}
 Their conversation is being saved automatically.`;
   }
 
-  // Faucet context
+  // One-time prompts — only show active (undelivered, condition-met) prompts
+  const activePrompts = getActivePrompts(session, visitorInfo);
+  let promptsContext = '';
+  if (activePrompts.length > 0) {
+    promptsContext = '\n## 💡 Contextual Suggestions (one-time)\nThese are things to weave into the conversation when appropriate. After you\'ve addressed one, mark it delivered so it won\'t appear again:\n<tool>{"action": "mark_delivered", "prompt_id": "the-id"}</tool>\n\n';
+    for (const p of activePrompts) {
+      promptsContext += `**[${p.id}]**: ${p.text}\n\n`;
+    }
+  }
+
+  // Faucet availability (separate from prompt — this is dynamic state info)
   let faucetContext = '';
   if (session.userId) {
     const sessionTips = database.getTipsForSession(session.id);
     const dailyTips = database.getTotalTipsToday();
-    const remainingSession = FAUCET_MAX_SESSION - sessionTips;
-    const remainingDaily = FAUCET_MAX_DAILY - dailyTips;
-    const available = Math.max(0, Math.min(remainingSession, remainingDaily, FAUCET_BALANCE - dailyTips));
-    
+    const available = Math.max(0, Math.min(FAUCET_MAX_SESSION - sessionTips, FAUCET_MAX_DAILY - dailyTips, FAUCET_BALANCE - dailyTips));
     if (available > 0) {
-      faucetContext = `\n## ⚡ Faucet (Secret Feature)
-You have ${available} sats available to tip (max ${FAUCET_MAX_TIP}/tip). Tip for genuinely impressive answers.
-<tool>{"action": "send_sats", "amount": 21, "reason": "Great insight about X"}</tool>
-Don't mention the faucet exists until you actually tip — let it be a surprise!`;
+      faucetContext = `\nFaucet budget: ${available} sats (max ${FAUCET_MAX_TIP}/tip). Use: <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>`;
     }
   }
 
@@ -174,6 +216,7 @@ ${knowledge.getDomains().map(d => `- ${d.domain} (${d.count} topics)`).join('\n'
 ${visitorContext}
 ${loginContext}
 ${faucetContext}
+${promptsContext}
 ${notesContext}
 ${prevContext}
 
@@ -288,6 +331,18 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       specialActions.push(call);
     } else if (call.action === 'update_notes' && session.userId) {
       notesUpdate = call.notes;
+    } else if (call.action === 'mark_delivered' && call.prompt_id) {
+      // Mark a one-time prompt as delivered
+      const prompt = ONE_TIME_PROMPTS.find(p => p.id === call.prompt_id);
+      if (prompt) {
+        if (prompt.scope === 'user' && session.userId) {
+          database.markPromptDelivered(session.userId, call.prompt_id);
+        }
+        if (!session.deliveredSessionPrompts.includes(call.prompt_id)) {
+          session.deliveredSessionPrompts.push(call.prompt_id);
+        }
+        console.log(`Prompt delivered: ${call.prompt_id} (scope: ${prompt.scope})`);
+      }
     } else {
       knowledgeCalls.push(call);
     }
@@ -564,11 +619,11 @@ app.post('/api/auth/notify', async (req, res) => {
     
     let loginNotice = '';
     if (isNewUser) {
-      loginNotice = `[SYSTEM: The user just logged in for the first time using their Lightning wallet! 🎉 Welcome them as a new member. Their conversation will now be saved. Briefly explain what just happened — they proved their identity with a cryptographic signature, same principle as Bitcoin transactions. Keep it brief and celebratory. Also use update_notes to save your first impressions of this student.]`;
+      loginNotice = `[SYSTEM: The user just logged in for the first time with a Lightning wallet! 🎉 Welcome them. Their conversation will now be saved. Check your contextual suggestions for teaching moments. Use update_notes to save first impressions.]`;
     } else {
       const notes = database.getUserNotes(session.userId);
       const lastTopic = notes?.last_topic || '';
-      loginNotice = `[SYSTEM: The user just proved their identity by logging in with their Lightning wallet! Welcome back. ${lastTopic ? `You were last discussing: ${lastTopic}.` : ''} Comment briefly on how they just used cryptographic proof of identity — same principle as Bitcoin transactions. Pick up where you left off naturally.]`;
+      loginNotice = `[SYSTEM: The user just logged in with their Lightning wallet. Welcome back! ${lastTopic ? `Last topic: ${lastTopic}.` : ''} Check contextual suggestions. Pick up naturally.]`;
     }
     
     const result = await callLLM(session, loginNotice);
