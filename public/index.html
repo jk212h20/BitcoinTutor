@@ -272,6 +272,7 @@
     <div class="logo">₿</div>
     <h1>Bitcoin Tutor</h1>
     <span class="login-indicator" id="loginIndicator">⚡ Logged in</span>
+    <a href="/admin" id="adminLink" style="display:none;font-size:12px;padding:4px 10px;border-radius:12px;background:#1a1a2e;border:1px solid var(--accent);color:var(--accent);text-decoration:none;">Admin</a>
     <span class="subtitle">Adaptive Socratic tutor</span>
     <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
   </div>
@@ -486,11 +487,26 @@
               addMessage(notifyData.message, 'bot');
               handleActions(notifyData.actions);
             }
+            
+            // Check if admin
+            checkAdminStatus();
           }
         } catch (err) {
           // Silently retry
         }
       }, 2000);
+    }
+    
+    // === Admin check ===
+    async function checkAdminStatus() {
+      if (!sessionId) return;
+      try {
+        const res = await fetch(`/api/admin/check?sessionId=${sessionId}`);
+        const data = await res.json();
+        if (data.isAdmin) {
+          document.getElementById('adminLink').style.display = 'inline-block';
+        }
+      } catch (e) { /* silent */ }
     }
     
     // === Balance & Claim ===
@@ -659,6 +675,7 @@
         if (data.error) throw new Error(data.error);
         
         sessionId = data.sessionId;
+        localStorage.setItem('btc-tutor-session', sessionId);
         hideLoading();
         addMessage(data.message, 'bot');
         handleActions(data.actions);

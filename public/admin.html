@@ -68,12 +68,12 @@
 
   <script>
     // Get sessionId from main app's localStorage or URL
-    const sessionId = new URLSearchParams(window.location.search).get('s') || localStorage.getItem('btc-tutor-admin-session');
+    const sessionId = new URLSearchParams(window.location.search).get('s') || localStorage.getItem('btc-tutor-session');
     
     if (!sessionId) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error').style.display = 'block';
-      document.getElementById('error').textContent = 'No session found. Log in on the main tutor page first, then visit /admin?s=YOUR_SESSION_ID';
+      document.getElementById('error').textContent = 'No session found. Start a chat and log in with Lightning first, then come back here.';
     } else {
       loadAdmin();
     }
