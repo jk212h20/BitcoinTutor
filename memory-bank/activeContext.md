@@ -45,6 +45,8 @@ Deployed and live at https://bitcointutor-production.up.railway.app
 - **visitors**: visitor_id, visit_count, last_topics, linked_user_id
 - **conversations**: id, user_id, visitor_id, messages (JSON), created_at, updated_at
 - **faucet_tips**: id, user_id, session_id, amount, reason
+- **api_costs**: id, session_id, user_id, prompt_tokens, completion_tokens, cost_sats, model, created_at
+- **settings**: key (PK), value — persists admin settings (e.g. `model` → `claude-sonnet-4.6`)
 
 ## LLM Tool Calls
 The LLM can use `<tool>{...}</tool>` tags for:
@@ -54,7 +56,14 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `send_sats` — tip logged-in users
 - `update_notes` — persist observations about students (merged incrementally)
 
-## Recent Changes (2026-04-09)
+## Recent Changes (2026-04-09, Session 4)
+- **Admin dashboard** at `/admin` — API costs (total+daily), users, tips, conversations, model switcher
+- **API cost tracking in sats** — `api_costs` table tracks every LLM call with model-specific pricing
+- **Model switcher** — Admin can switch Haiku/Sonnet/Opus from dashboard dropdown; persisted in `settings` table
+- **Frontend shows sats cost** instead of raw token counts; Admin link appears for user id=1
+- **Session stored in localStorage** for seamless admin page access
+
+## Earlier Changes (2026-04-09, Session 3)
 - **Lightning Address auto-pay**: Users share their Lightning Address (e.g. user@walletofsatoshi.com), tutor saves it via `set_lightning_address` tool. Future tips auto-pay instantly — resolve address → get invoice → pay via LND. No QR scanning needed after setup.
 - **Real Lightning payouts**: LNURL-withdraw flow still available as fallback for users without Lightning Address. Balance indicator + Claim button in header.
 - **One-time prompts with recall**: `knowledge/prompts.json` defines prompts with `recall_hint` + `keywords`. New `lightning_address_ask` prompt suggests sharing LN address after first tip.

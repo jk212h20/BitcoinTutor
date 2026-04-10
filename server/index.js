@@ -1,6 +1,6 @@
 /**
- * Bitcoin Tutor Server
- * Adaptive Socratic Bitcoin tutor with Lightning auth, persistent profiles, and AI faucet
+ * Bitcoin Rabbit Hole Server
+ * Adaptive Socratic Bitcoin guide with Lightning auth, persistent profiles, and AI faucet
  */
 const express = require('express');
 const cors = require('cors');
@@ -219,24 +219,32 @@ Their conversation is being saved automatically.`;
     const dailyTips = database.getTotalTipsToday();
     const available = Math.max(0, Math.min(FAUCET_MAX_SESSION - sessionTips, FAUCET_MAX_DAILY - dailyTips, FAUCET_BALANCE - dailyTips));
     if (available > 0) {
-      faucetContext = `\nFaucet budget: ${available} sats (max ${FAUCET_MAX_TIP}/tip). Use: <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>`;
+      faucetContext = `\n## ⚡ Tipping (USE SPARINGLY)
+You CAN tip sats but be VERY selective. Tips should be rare and meaningful — maybe once every 10+ exchanges, and ONLY for genuinely impressive answers or breakthroughs. Do NOT tip for:
+- Basic correct answers
+- Partial knowledge
+- Just participating
+- Every good response
+DO tip for: truly surprising insight, connecting non-obvious concepts, correcting YOUR mistake, demonstrating deep understanding.
+Budget: ${available} sats (max ${FAUCET_MAX_TIP}/tip). Command: <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
+NEVER announce you're thinking about tipping. NEVER say "let me send you some sats." Just do it silently when deserved, or don't.`;
     }
-    // Show total tipped to this user
     const user = database.getUserById(session.userId);
     const totalTipped = database.getTotalTipsForUser(session.userId);
     if (totalTipped > 0) {
-      faucetContext += `\nYou've given this student ${totalTipped} sats total across all sessions.`;
+      faucetContext += `\nTotal tipped to this student: ${totalTipped} sats.`;
     }
   }
 
-  return `You are a friendly, knowledgeable Bitcoin tutor having an adaptive conversation. Your goal is to help the user deepen their Bitcoin understanding through Socratic dialogue — asking thoughtful questions, exploring what they know, explaining concepts, and naturally adapting to their level.
+  return `You are the Bitcoin Rabbit Hole — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
 
 ## Your Personality
-- Warm, curious, conversational — like a knowledgeable friend at a coffee shop
+- Curious, conversational, slightly irreverent — like a knowledgeable friend who's excited about Bitcoin
 - Never condescending — even wrong answers are interesting starting points
 - Use analogies and real-world examples when explaining
 - Keep things concise. Don't lecture. Short paragraphs, not walls of text.
 - Share fascinating Bitcoin details when they connect naturally
+- The "rabbit hole" metaphor is your vibe — each answer opens a new tunnel to explore
 
 ## How You Work
 You have access to a Bitcoin knowledge base with ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics across these domains:
@@ -974,7 +982,7 @@ async function start() {
   }
   
   app.listen(PORT, () => {
-    console.log(`Bitcoin Tutor running on http://localhost:${PORT}`);
+    console.log(`Bitcoin Rabbit Hole running on http://localhost:${PORT}`);
     console.log(`Model: ${MODEL}`);
     console.log(`Knowledge base: ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics`);
     console.log(`Faucet: ${FAUCET_BALANCE} sats (max ${FAUCET_MAX_TIP}/tip, ${FAUCET_MAX_SESSION}/session, ${FAUCET_MAX_DAILY}/day)`);

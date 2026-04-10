@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitcoin Tutor</title>
+  <title>Bitcoin Rabbit Hole</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -270,10 +270,10 @@
 <body>
   <div class="header">
     <div class="logo">₿</div>
-    <h1>Bitcoin Tutor</h1>
+    <h1>Bitcoin Rabbit Hole</h1>
     <span class="login-indicator" id="loginIndicator">⚡ Logged in</span>
     <a href="/admin" id="adminLink" style="display:none;font-size:12px;padding:4px 10px;border-radius:12px;background:#1a1a2e;border:1px solid var(--accent);color:var(--accent);text-decoration:none;">Admin</a>
-    <span class="subtitle">Adaptive Socratic tutor</span>
+    <span class="subtitle">How deep do you want to go?</span>
     <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
   </div>
   <div class="model-info" id="modelInfo"></div>
@@ -331,7 +331,7 @@
     function addMessage(content, sender) {
       const msg = document.createElement('div');
       msg.className = `message ${sender}`;
-      const senderLabel = sender === 'bot' ? '₿ Tutor' : sender === 'system' ? '⚡ System' : 'You';
+      const senderLabel = sender === 'bot' ? '🐇 Rabbit Hole' : sender === 'system' ? '⚡ System' : 'You';
       msg.innerHTML = `
         <div class="sender">${senderLabel}</div>
         <div class="content">${formatMessage(content)}</div>
