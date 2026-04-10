@@ -1,4 +1,4 @@
-# Active Context — Bitcoin Tutor
+# Active Context — Bitcoin Rabbit Hole
 
 ## Current State (2026-04-09)
 Deployed and live at https://bitcointutor-production.up.railway.app
@@ -56,7 +56,12 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `send_sats` — tip logged-in users
 - `update_notes` — persist observations about students (merged incrementally)
 
-## Recent Changes (2026-04-09, Session 4)
+## Recent Changes (2026-04-10, Session 5)
+- **Rebranded to "Bitcoin Rabbit Hole"** — name, personality, subtitle ("How deep do you want to go?"), sender label (🐇), all references
+- **Tipping heavily restrained** — system prompt now says tip only for truly impressive breakthroughs (1 in 10+ exchanges), never announce or offer tipping
+- **Model choice persisted in DB** — `settings` table survives redeploys
+
+## Changes (2026-04-09, Session 4)
 - **Admin dashboard** at `/admin` — API costs (total+daily), users, tips, conversations, model switcher
 - **API cost tracking in sats** — `api_costs` table tracks every LLM call with model-specific pricing
 - **Model switcher** — Admin can switch Haiku/Sonnet/Opus from dashboard dropdown; persisted in `settings` table

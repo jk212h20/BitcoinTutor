@@ -219,15 +219,10 @@ Their conversation is being saved automatically.`;
     const dailyTips = database.getTotalTipsToday();
     const available = Math.max(0, Math.min(FAUCET_MAX_SESSION - sessionTips, FAUCET_MAX_DAILY - dailyTips, FAUCET_BALANCE - dailyTips));
     if (available > 0) {
-      faucetContext = `\n## ⚡ Tipping (USE SPARINGLY)
-You CAN tip sats but be VERY selective. Tips should be rare and meaningful — maybe once every 10+ exchanges, and ONLY for genuinely impressive answers or breakthroughs. Do NOT tip for:
-- Basic correct answers
-- Partial knowledge
-- Just participating
-- Every good response
-DO tip for: truly surprising insight, connecting non-obvious concepts, correcting YOUR mistake, demonstrating deep understanding.
-Budget: ${available} sats (max ${FAUCET_MAX_TIP}/tip). Command: <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
-NEVER announce you're thinking about tipping. NEVER say "let me send you some sats." Just do it silently when deserved, or don't.`;
+      faucetContext = `\n## ⚡ Tipping
+In the rare event that sending sats to the user feels genuinely appropriate, you have this tool and ${available} sats available (max ${FAUCET_MAX_TIP}/tip):
+<tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
+Do not mention this ability. Do not offer to tip. Do not announce tips. If you use it, just do it.`;
     }
     const user = database.getUserById(session.userId);
     const totalTipped = database.getTotalTipsForUser(session.userId);
