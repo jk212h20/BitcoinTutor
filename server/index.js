@@ -107,6 +107,8 @@ function getActivePrompts(session, visitorInfo) {
         return !session.userId && session.exchangeCount >= 4 && !session.loginSuggested;
       case 'logged_in_with_faucet':
         return session.userId && hasFaucet;
+      case 'logged_in_no_ln_address':
+        return session.userId && !database.getLightningAddress(session.userId);
       default:
         // Custom conditions: "always" means show if not delivered
         return p.condition === 'always';
@@ -264,7 +266,9 @@ Include JSON tool calls in your response. The system executes them and provides 
 Use blockchain tools proactively when discussing real-time Bitcoin state!
 
 **Login:** <tool>{"action": "show_login"}</tool>
-${session.userId ? `**Tip sats:** <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>` : ''}
+${session.userId ? `**Tip sats:** <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
+**Save Lightning Address** (so tips go directly to their wallet): <tool>{"action": "set_lightning_address", "address": "user@wallet.com"}</tool>
+${database.getLightningAddress(session.userId) ? `This user's Lightning Address: ${database.getLightningAddress(session.userId)} — tips are auto-sent to their wallet! ⚡` : 'This user has NOT set a Lightning Address yet. If they share one (e.g. user@walletofsatoshi.com), save it so future tips go straight to their wallet.'}` : ''}
 
 ${session.userId ? `**Update student notes** (use after meaningful exchanges to remember what you learned about this student):
 <tool>{"action": "update_notes", "notes": {"interests": ["topic1"], "strengths": ["what they know well"], "gaps": ["misconceptions"], "style": "learning preferences", "memorable": ["notable moments"], "last_topic": "what you were discussing"}}</tool>
@@ -357,6 +361,8 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
   for (const call of toolCalls) {
     if (call.action === 'show_login' || call.action === 'send_sats') {
       specialActions.push(call);
+    } else if (call.action === 'set_lightning_address' && session.userId) {
+      specialActions.push(call);
     } else if (call.action === 'update_notes' && session.userId) {
       notesUpdate = call.notes;
     } else if (call.action === 'mark_delivered' && call.prompt_id) {
@@ -401,6 +407,25 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
     if (action.action === 'show_login') {
       session.loginSuggested = true;
       actionResults.push({ type: 'show_login' });
+    } else if (action.action === 'set_lightning_address' && session.userId) {
+      const addr = (action.address || '').trim();
+      if (addr && addr.includes('@')) {
+        database.setLightningAddress(session.userId, addr);
+        console.log(`Set Lightning Address for user ${session.userId}: ${addr}`);
+        // Try to pay out any existing balance immediately
+        const user = database.getUserById(session.userId);
+        if (user && user.sats_received > 0) {
+          (async () => {
+            try {
+              const result = await lightning.payLightningAddress(addr, user.sats_received, 'Bitcoin Tutor: accumulated tips');
+              database.deductSatsFromUser(session.userId, user.sats_received);
+              console.log(`⚡ Auto-paid ${user.sats_received} sats to ${addr} (hash: ${result.paymentHash})`);
+            } catch (err) {
+              console.error(`⚡ Auto-pay to ${addr} failed:`, err.message);
+            }
+          })();
+        }
+      }
     } else if (action.action === 'send_sats' && session.userId) {
       const amount = Math.min(action.amount || 21, FAUCET_MAX_TIP);
       const sessionTips = database.getTipsForSession(session.id);
@@ -409,6 +434,20 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
         database.recordTip(session.userId, session.id, amount, action.reason || 'Good answer');
         actionResults.push({ type: 'tip', amount, reason: action.reason });
         console.log(`Tipped ${amount} sats to user ${session.userId}: ${action.reason}`);
+        
+        // Auto-pay via Lightning Address if set
+        const lnAddr = database.getLightningAddress(session.userId);
+        if (lnAddr) {
+          (async () => {
+            try {
+              const result = await lightning.payLightningAddress(lnAddr, amount, `Bitcoin Tutor: ${action.reason || 'tip'}`);
+              database.deductSatsFromUser(session.userId, amount);
+              console.log(`⚡ Auto-paid ${amount} sats to ${lnAddr} (hash: ${result.paymentHash})`);
+            } catch (err) {
+              console.error(`⚡ Auto-pay to ${lnAddr} failed (sats saved for manual claim):`, err.message);
+            }
+          })();
+        }
       }
     }
   }

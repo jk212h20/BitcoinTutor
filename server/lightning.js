@@ -103,9 +103,72 @@ async function isConfigured() {
   }
 }
 
+/**
+ * Resolve a Lightning Address to LNURL-pay metadata
+ */
+async function resolveLightningAddress(address) {
+  if (!address || !address.includes('@')) {
+    throw new Error('Invalid Lightning Address format');
+  }
+  const [user, domain] = address.split('@');
+  const url = `https://${domain}/.well-known/lnurlp/${user}`;
+  
+  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error(`Failed to resolve ${address}: ${response.status}`);
+  
+  const data = await response.json();
+  if (data.status === 'ERROR') throw new Error(`Lightning Address error: ${data.reason}`);
+  if (data.tag !== 'payRequest') throw new Error(`Unexpected tag: ${data.tag}`);
+  
+  return {
+    callback: data.callback,
+    minSendable: data.minSendable,
+    maxSendable: data.maxSendable,
+  };
+}
+
+/**
+ * Request an invoice from a Lightning Address LNURL-pay endpoint
+ */
+async function requestInvoice(callback, amountSats, comment = '') {
+  const amountMsats = amountSats * 1000;
+  let url = `${callback}${callback.includes('?') ? '&' : '?'}amount=${amountMsats}`;
+  if (comment) url += `&comment=${encodeURIComponent(comment)}`;
+  
+  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error(`Invoice request failed: ${response.status}`);
+  
+  const data = await response.json();
+  if (data.status === 'ERROR') throw new Error(`Invoice error: ${data.reason}`);
+  
+  return { pr: data.pr };
+}
+
+/**
+ * Pay a Lightning Address a specific amount
+ * Full flow: resolve → get invoice → pay invoice
+ */
+async function payLightningAddress(address, amountSats, comment = '') {
+  const lnurlData = await resolveLightningAddress(address);
+  
+  const minSats = Math.ceil(lnurlData.minSendable / 1000);
+  const maxSats = Math.floor(lnurlData.maxSendable / 1000);
+  if (amountSats < minSats) throw new Error(`Amount ${amountSats} below minimum ${minSats}`);
+  if (amountSats > maxSats) throw new Error(`Amount ${amountSats} exceeds maximum ${maxSats}`);
+  
+  const invoiceData = await requestInvoice(lnurlData.callback, amountSats, comment);
+  const payResult = await payInvoice(invoiceData.pr);
+  
+  return {
+    success: true,
+    paymentHash: payResult.payment_hash,
+  };
+}
+
 module.exports = {
   getNodeInfo,
   getChannelBalance,
   payInvoice,
+  payLightningAddress,
   isConfigured,
 };

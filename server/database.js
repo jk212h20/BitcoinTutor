@@ -61,6 +61,14 @@ async function init() {
     db.run("ALTER TABLE users ADD COLUMN notes TEXT DEFAULT '{}'");
   }
   
+  // Migration: add lightning_address column if missing
+  try {
+    db.exec("SELECT lightning_address FROM users LIMIT 0");
+  } catch (e) {
+    db.run("ALTER TABLE users ADD COLUMN lightning_address TEXT DEFAULT NULL");
+    console.log('Migration: added lightning_address column');
+  }
+  
   db.run(`
     CREATE TABLE IF NOT EXISTS conversations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -303,6 +311,16 @@ function getLastConversation(userId) {
   return null;
 }
 
+function setLightningAddress(userId, address) {
+  db.run(`UPDATE users SET lightning_address = ? WHERE id = ?`, [address, userId]);
+  saveDatabase();
+}
+
+function getLightningAddress(userId) {
+  const user = getUserById(userId);
+  return user?.lightning_address || null;
+}
+
 // === Faucet ===
 
 function deductSatsFromUser(userId, amount) {
@@ -358,6 +376,8 @@ module.exports = {
   updateUserNotes,
   getDeliveredPrompts,
   markPromptDelivered,
+  setLightningAddress,
+  getLightningAddress,
   // Auth
   createChallenge,
   getValidChallenge,

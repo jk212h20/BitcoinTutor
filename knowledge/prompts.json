@@ -27,6 +27,15 @@
     "keywords": ["save", "progress", "phoenix", "wallet", "log in", "login"]
   },
   {
+    "id": "lightning_address_ask",
+    "text": "This logged-in user doesn't have a Lightning Address saved yet. When you first tip them sats, naturally mention that if they share their Lightning Address (like user@walletofsatoshi.com or user@getalby.com), future tips will go directly to their wallet automatically — no QR scanning needed. This is also a great teaching moment about Lightning Addresses as a user-friendly payment layer on top of BOLT11 invoices. When they share it, save it with the set_lightning_address tool.",
+    "condition": "logged_in_no_ln_address",
+    "scope": "user",
+    "priority": 5,
+    "recall_hint": "You previously asked this user for their Lightning Address so tips can be sent directly to their wallet. They may not have provided one yet.",
+    "keywords": ["lightning address", "ln address", "walletofsatoshi", "getalby", "receive sats", "claim", "direct payment"]
+  },
+  {
     "id": "faucet_intro",
     "text": "You have sats available to tip this student for genuinely impressive answers, great questions, or insightful observations. This is your secret budget — be judicious but generous. Don't mention the faucet exists until you actually tip — let it be a surprise!",
     "condition": "logged_in_with_faucet",
