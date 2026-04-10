@@ -50,7 +50,14 @@
       <div class="card"><div class="label">Visitors</div><div class="value" id="visitorCount">—</div></div>
       <div class="card"><div class="label">Conversations</div><div class="value" id="convoCount">—</div></div>
       <div class="card"><div class="label">Active Sessions</div><div class="value" id="sessionCount">—</div></div>
-      <div class="card"><div class="label">Model</div><div class="value" id="modelName" style="font-size:14px;word-break:break-all;">—</div></div>
+      <div class="card">
+        <div class="label">Model</div>
+        <div id="modelSwitcher" style="margin-top:8px;">
+          <select id="modelSelect" onchange="switchModel(this.value)" style="background:var(--bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
+          </select>
+          <div id="modelStatus" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
+        </div>
+      </div>
     </div>
     
     <h2>Users</h2>
@@ -109,7 +116,8 @@
         document.getElementById('visitorCount').textContent = d.visitors.count;
         document.getElementById('convoCount').textContent = d.conversations.count;
         document.getElementById('sessionCount').textContent = d.activeSessions;
-        document.getElementById('modelName').textContent = d.model;
+        // Load model switcher
+        loadModels(d.model);
         
         // Users table
         const ut = document.getElementById('usersTable');
@@ -145,6 +153,46 @@
         document.getElementById('error').style.display = 'block';
         document.getElementById('error').textContent = `Error: ${err.message}`;
       }
+    }
+    async function loadModels(currentModel) {
+      try {
+        const res = await fetch(`/api/admin/models?sessionId=${sessionId}`);
+        const data = await res.json();
+        const sel = document.getElementById('modelSelect');
+        sel.innerHTML = '';
+        for (const m of data.available) {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = `${m.label} (⚡${m.costPerMInput}/${m.costPerMOutput} per 1M)`;
+          if (m.id === currentModel) opt.selected = true;
+          sel.appendChild(opt);
+        }
+      } catch (e) { console.error('Failed to load models:', e); }
+    }
+    
+    async function switchModel(modelId) {
+      const status = document.getElementById('modelStatus');
+      status.textContent = 'Switching...';
+      status.style.color = 'var(--text-muted)';
+      try {
+        const res = await fetch('/api/admin/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, model: modelId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          status.textContent = `✅ Switched to ${data.label}`;
+          status.style.color = 'var(--success)';
+        } else {
+          status.textContent = `❌ ${data.error}`;
+          status.style.color = 'var(--danger)';
+        }
+      } catch (e) {
+        status.textContent = `❌ ${e.message}`;
+        status.style.color = 'var(--danger)';
+      }
+      setTimeout(() => { status.textContent = ''; }, 3000);
     }
   </script>
 </body>

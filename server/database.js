@@ -375,9 +375,11 @@ function getTotalTipsToday() {
 
 // Pricing in sats per 1M tokens (approximate at ~100k sats/$)
 const MODEL_PRICING = {
-  'claude-sonnet-4.6': { input: 300, output: 1500 },     // $3/$15 per 1M
+  'claude-haiku-4.6': { input: 100, output: 500 },         // $1/$5 per 1M
+  'claude-sonnet-4.6': { input: 300, output: 1500 },       // $3/$15 per 1M
   'claude-sonnet-4-20250514': { input: 300, output: 1500 },
-  'gpt-4o-mini': { input: 15, output: 60 },               // $0.15/$0.60 per 1M  
+  'claude-opus-4.6': { input: 1500, output: 7500 },        // $15/$75 per 1M
+  'gpt-4o-mini': { input: 15, output: 60 },                // $0.15/$0.60 per 1M  
   'gpt-4o': { input: 250, output: 1000 },                  // $2.50/$10 per 1M
   'default': { input: 300, output: 1500 },
 };

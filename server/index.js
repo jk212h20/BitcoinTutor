@@ -35,7 +35,12 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const PORT = process.env.PORT || 3456;
 const PPQ_API_KEY = process.env.PPQ_API_KEY || 'sk-sOIHBImdCmUYVIXsBnsXBN';
 const PPQ_BASE_URL = process.env.PPQ_BASE_URL || 'https://api.ppq.ai/v1';
-const MODEL = process.env.MODEL || 'claude-sonnet-4.6';
+let MODEL = process.env.MODEL || 'claude-sonnet-4.6';
+const AVAILABLE_MODELS = [
+  { id: 'claude-haiku-4.6', label: 'Haiku 4.6', costPerMInput: 100, costPerMOutput: 500 },
+  { id: 'claude-sonnet-4.6', label: 'Sonnet 4.6', costPerMInput: 300, costPerMOutput: 1500 },
+  { id: 'claude-opus-4.6', label: 'Opus 4.6', costPerMInput: 1500, costPerMOutput: 7500 },
+];
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const FAUCET_BALANCE = parseInt(process.env.FAUCET_BALANCE || '21000');
 const FAUCET_MAX_TIP = parseInt(process.env.FAUCET_MAX_TIP || '100');
@@ -915,6 +920,31 @@ app.get('/api/admin/stats', (req, res) => {
   stats.activeSessions = sessions.size;
   
   res.json(stats);
+});
+
+app.get('/api/admin/models', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  res.json({ current: MODEL, available: AVAILABLE_MODELS });
+});
+
+app.post('/api/admin/model', (req, res) => {
+  const { sessionId, model } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const valid = AVAILABLE_MODELS.find(m => m.id === model);
+  if (!valid) {
+    return res.status(400).json({ error: `Invalid model. Available: ${AVAILABLE_MODELS.map(m => m.id).join(', ')}` });
+  }
+  const oldModel = MODEL;
+  MODEL = model;
+  console.log(`🔄 Model switched: ${oldModel} → ${MODEL} (by admin)`);
+  res.json({ success: true, model: MODEL, label: valid.label });
 });
 
 app.get('/api/admin/check', (req, res) => {
