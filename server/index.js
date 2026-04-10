@@ -216,6 +216,12 @@ Their conversation is being saved automatically.`;
     if (available > 0) {
       faucetContext = `\nFaucet budget: ${available} sats (max ${FAUCET_MAX_TIP}/tip). Use: <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>`;
     }
+    // Show total tipped to this user
+    const user = database.getUserById(session.userId);
+    const totalTipped = database.getTotalTipsForUser(session.userId);
+    if (totalTipped > 0) {
+      faucetContext += `\nYou've given this student ${totalTipped} sats total across all sessions.`;
+    }
   }
 
   return `You are a friendly, knowledgeable Bitcoin tutor having an adaptive conversation. Your goal is to help the user deepen their Bitcoin understanding through Socratic dialogue — asking thoughtful questions, exploring what they know, explaining concepts, and naturally adapting to their level.
@@ -264,6 +270,9 @@ Include JSON tool calls in your response. The system executes them and provides 
 <tool>{"action": "block", "height": 840000}</tool> <tool>{"action": "mining_pools", "period": "1w"}</tool>
 <tool>{"action": "hashrate"}</tool> <tool>{"action": "network_stats"}</tool> <tool>{"action": "halving_info"}</tool>
 Use blockchain tools proactively when discussing real-time Bitcoin state!
+
+**Generate donation invoice** (when someone wants to support Bitcoin Tutor or donate sats):
+<tool>{"action": "create_donation", "amount": 1000, "memo": "Bitcoin Tutor donation"}</tool>
 
 **Login:** <tool>{"action": "show_login"}</tool>
 ${session.userId ? `**Tip sats:** <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
@@ -359,7 +368,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
   const blockchainActions = ['latest_block','recent_blocks','mempool','fees','address','transaction','block','mining_pools','hashrate','network_stats','halving_info'];
   
   for (const call of toolCalls) {
-    if (call.action === 'show_login' || call.action === 'send_sats') {
+    if (call.action === 'show_login' || call.action === 'send_sats' || call.action === 'create_donation') {
       specialActions.push(call);
     } else if (call.action === 'set_lightning_address' && session.userId) {
       specialActions.push(call);
@@ -448,6 +457,16 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
           }
         }
         actionResults.push({ type: 'tip', amount, reason: action.reason, paid });
+      }
+    } else if (action.action === 'create_donation') {
+      const amount = Math.max(100, Math.min(action.amount || 1000, 1000000));
+      const memo = action.memo || 'Bitcoin Tutor donation';
+      try {
+        const invoice = await lightning.createInvoice(amount, memo);
+        actionResults.push({ type: 'donation', amount, memo, paymentRequest: invoice.paymentRequest, rHash: invoice.rHash });
+        console.log(`🎁 Donation invoice created: ${amount} sats (${memo})`);
+      } catch (err) {
+        console.error('Donation invoice creation failed:', err.message);
       }
     }
   }
@@ -843,6 +862,16 @@ app.get('/api/claim/callback', (req, res) => {
       console.error(`⚡ Withdraw payment failed for user ${session.userId}:`, err.message);
     }
   })();
+});
+
+// Poll donation invoice status
+app.get('/api/donation/status/:rHash', async (req, res) => {
+  try {
+    const result = await lightning.lookupInvoice(req.params.rHash);
+    res.json(result);
+  } catch (err) {
+    res.json({ settled: false, error: err.message });
+  }
 });
 
 // Poll withdraw status

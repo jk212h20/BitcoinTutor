@@ -165,10 +165,42 @@ async function payLightningAddress(address, amountSats, comment = '') {
   };
 }
 
+/**
+ * Create a Lightning invoice (for receiving donations)
+ */
+async function createInvoice(amountSats, memo = 'Bitcoin Tutor donation') {
+  const body = {
+    value: String(amountSats),
+    memo,
+    expiry: '3600', // 1 hour
+  };
+  
+  const result = await lndRequest('/v1/invoices', 'POST', body);
+  return {
+    paymentRequest: result.payment_request,
+    rHash: Buffer.from(result.r_hash, 'base64').toString('hex'),
+  };
+}
+
+/**
+ * Check if an invoice has been paid
+ */
+async function lookupInvoice(rHashHex) {
+  const rHashBase64Url = Buffer.from(rHashHex, 'hex').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_');
+  const result = await lndRequest(`/v1/invoice/${rHashBase64Url}`);
+  return {
+    settled: result.settled || false,
+    amtPaidSat: parseInt(result.amt_paid_sat || '0'),
+  };
+}
+
 module.exports = {
   getNodeInfo,
   getChannelBalance,
   payInvoice,
   payLightningAddress,
+  createInvoice,
+  lookupInvoice,
   isConfigured,
 };

@@ -372,6 +372,8 @@
             addMessage(`⚡ You earned ${action.amount} sats! "${action.reason}" — claim them with the button above.`, 'system');
           }
           checkBalance();
+        } else if (action.type === 'donation') {
+          showDonationQR(action);
         }
       }
     }
@@ -588,6 +590,53 @@
         console.error('Claim error:', err);
         addMessage('Failed to create withdraw. Try again.', 'system');
       }
+    }
+    
+    // === Donation QR ===
+    function showDonationQR(action) {
+      const qrDiv = document.createElement('div');
+      qrDiv.className = 'qr-container';
+      const qrId = 'donationQR_' + Date.now();
+      qrDiv.id = qrId;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + action.paymentRequest)}`;
+      
+      qrDiv.innerHTML = `
+        <h3>🎁 Donate ${action.amount} sats</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">${action.memo}</p>
+        <img src="${qrUrl}" alt="Lightning Invoice QR" />
+        <div class="lnurl-text" onclick="navigator.clipboard.writeText('${action.paymentRequest}').then(()=>{this.textContent='Copied!'})" title="Click to copy invoice">
+          ${action.paymentRequest.slice(0, 40)}...
+        </div>
+        <div class="qr-status" id="${qrId}_status">Waiting for payment...</div>
+        <div class="wallet-help">
+          <a href="lightning:${action.paymentRequest}">Open in wallet app</a>
+        </div>
+      `;
+      
+      messagesEl.appendChild(qrDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      
+      // Poll for payment
+      let donationAttempts = 0;
+      const donationPoll = setInterval(async () => {
+        donationAttempts++;
+        if (donationAttempts > 1800) { // 1 hour at 2s intervals
+          clearInterval(donationPoll);
+          const el = document.getElementById(qrId + '_status');
+          if (el) el.textContent = 'Invoice expired.';
+          return;
+        }
+        try {
+          const sr = await fetch(`/api/donation/status/${action.rHash}`);
+          const sd = await sr.json();
+          if (sd.settled) {
+            clearInterval(donationPoll);
+            const el = document.getElementById(qrId + '_status');
+            if (el) { el.textContent = `✅ Thank you! ${sd.amtPaidSat} sats received!`; el.className = 'qr-status success'; }
+            setTimeout(() => { const qr = document.getElementById(qrId); if (qr) qr.remove(); }, 5000);
+          }
+        } catch (e) { /* retry */ }
+      }, 2000);
     }
     
     // === Chat functions ===

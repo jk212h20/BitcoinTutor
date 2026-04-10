@@ -342,6 +342,14 @@ function getTipsForSession(sessionId) {
   return 0;
 }
 
+function getTotalTipsForUser(userId) {
+  const results = db.exec(`SELECT SUM(amount) as total FROM faucet_tips WHERE user_id = ?`, [userId]);
+  if (results.length > 0 && results[0].values[0][0] !== null) {
+    return results[0].values[0][0];
+  }
+  return 0;
+}
+
 function getTotalTipsToday() {
   const results = db.exec(`SELECT SUM(amount) as total FROM faucet_tips WHERE date(created_at) = date('now')`);
   if (results.length > 0 && results[0].values[0][0] !== null) {
@@ -389,5 +397,6 @@ module.exports = {
   recordTip,
   deductSatsFromUser,
   getTipsForSession,
+  getTotalTipsForUser,
   getTotalTipsToday,
 };
