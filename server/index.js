@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const PORT = process.env.PORT || 3456;
 const PPQ_API_KEY = process.env.PPQ_API_KEY || 'sk-sOIHBImdCmUYVIXsBnsXBN';
 const PPQ_BASE_URL = process.env.PPQ_BASE_URL || 'https://api.ppq.ai/v1';
-let MODEL = process.env.MODEL || 'claude-sonnet-4.6';
+let MODEL = process.env.MODEL || 'claude-sonnet-4.6'; // Will be overridden by DB setting on startup
 const AVAILABLE_MODELS = [
   { id: 'claude-haiku-4.6', label: 'Haiku 4.6', costPerMInput: 100, costPerMOutput: 500 },
   { id: 'claude-sonnet-4.6', label: 'Sonnet 4.6', costPerMInput: 300, costPerMOutput: 1500 },
@@ -943,7 +943,8 @@ app.post('/api/admin/model', (req, res) => {
   }
   const oldModel = MODEL;
   MODEL = model;
-  console.log(`🔄 Model switched: ${oldModel} → ${MODEL} (by admin)`);
+  database.setSetting('model', model);
+  console.log(`🔄 Model switched: ${oldModel} → ${MODEL} (by admin, persisted to DB)`);
   res.json({ success: true, model: MODEL, label: valid.label });
 });
 
@@ -964,6 +965,13 @@ app.get('/admin', (req, res) => {
 async function start() {
   await database.init();
   knowledge.loadKnowledge();
+  
+  // Load persisted model setting from DB
+  const savedModel = database.getSetting('model');
+  if (savedModel && AVAILABLE_MODELS.find(m => m.id === savedModel)) {
+    MODEL = savedModel;
+    console.log(`Loaded model from DB: ${MODEL}`);
+  }
   
   app.listen(PORT, () => {
     console.log(`Bitcoin Tutor running on http://localhost:${PORT}`);

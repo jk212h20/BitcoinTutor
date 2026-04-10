@@ -119,6 +119,13 @@ async function init() {
     )
   `);
   
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+  
   saveDatabase();
   console.log('Database tables ready');
 }
@@ -492,6 +499,22 @@ function getAdminStats() {
   };
 }
 
+// === Settings ===
+
+function getSetting(key, defaultValue = null) {
+  if (!db) return defaultValue;
+  const results = db.exec(`SELECT value FROM settings WHERE key = ?`, [key]);
+  if (results.length > 0 && results[0].values[0][0] !== null) {
+    return results[0].values[0][0];
+  }
+  return defaultValue;
+}
+
+function setSetting(key, value) {
+  db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`, [key, value]);
+  saveDatabase();
+}
+
 function getVisitorLinkedUser(visitorId) {
   const visitor = getVisitor(visitorId);
   if (visitor && visitor.linked_user_id) {
@@ -542,4 +565,7 @@ module.exports = {
   // Admin
   isAdmin,
   getAdminStats,
+  // Settings
+  getSetting,
+  setSetting,
 };
