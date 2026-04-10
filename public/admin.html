@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcoin Tutor — Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --text-muted: #8b949e; --accent: #f7931a;
+      --success: #3fb950; --danger: #f85149;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 24px; }
+    h2 { color: var(--text); margin: 24px 0 12px; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .card .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+    .card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    th { text-align: left; padding: 10px 14px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; background: #1c2333; }
+    td { padding: 10px 14px; font-size: 13px; border-top: 1px solid var(--border); }
+    .mono { font-family: 'SF Mono', monospace; font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+    .badge-admin { background: #f7931a33; color: var(--accent); }
+    .sats { color: var(--accent); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    #error { color: var(--danger); padding: 20px; text-align: center; display: none; }
+    #loading { color: var(--text-muted); padding: 40px; text-align: center; }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--text-muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">← Back to tutor</a>
+  <h1>₿ Admin Dashboard</h1>
+  <p class="subtitle">Bitcoin Tutor operational metrics</p>
+  
+  <div id="loading">Loading admin data...</div>
+  <div id="error"></div>
+  <div id="content" style="display:none">
+    <div class="grid">
+      <div class="card"><div class="label">API Cost (Total)</div><div class="value" id="totalCost">—</div><div class="sub" id="totalCalls">— calls</div></div>
+      <div class="card"><div class="label">API Cost (Today)</div><div class="value" id="todayCost">—</div><div class="sub" id="todayCalls">— calls</div></div>
+      <div class="card"><div class="label">Tips Given</div><div class="value" id="tipTotal">—</div><div class="sub" id="tipCount">— tips</div></div>
+      <div class="card"><div class="label">Users</div><div class="value" id="userCount">—</div></div>
+      <div class="card"><div class="label">Visitors</div><div class="value" id="visitorCount">—</div></div>
+      <div class="card"><div class="label">Conversations</div><div class="value" id="convoCount">—</div></div>
+      <div class="card"><div class="label">Active Sessions</div><div class="value" id="sessionCount">—</div></div>
+      <div class="card"><div class="label">Model</div><div class="value" id="modelName" style="font-size:14px;word-break:break-all;">—</div></div>
+    </div>
+    
+    <h2>Users</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Pubkey</th><th>Name</th><th>API Cost</th><th>Tips Received</th><th>LN Address</th><th>Last Login</th></tr></thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+    
+    <h2>Daily Costs (Last 14 Days)</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Cost (sats)</th><th>Prompt Tokens</th><th>Completion Tokens</th><th>API Calls</th></tr></thead>
+      <tbody id="dailyTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // Get sessionId from main app's localStorage or URL
+    const sessionId = new URLSearchParams(window.location.search).get('s') || localStorage.getItem('btc-tutor-admin-session');
+    
+    if (!sessionId) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = 'No session found. Log in on the main tutor page first, then visit /admin?s=YOUR_SESSION_ID';
+    } else {
+      loadAdmin();
+    }
+    
+    async function loadAdmin() {
+      try {
+        // Check admin access
+        const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
+        const checkData = await checkRes.json();
+        if (!checkData.isAdmin) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('error').textContent = 'Access denied. Only the first Lightning login (admin) can access this page.';
+          return;
+        }
+        
+        const res = await fetch(`/api/admin/stats?sessionId=${sessionId}`);
+        const d = await res.json();
+        if (d.error) throw new Error(d.error);
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        
+        // Summary cards
+        const fmt = n => typeof n === 'number' ? (n >= 1 ? n.toFixed(1) : '<1') : '0';
+        document.getElementById('totalCost').textContent = `⚡${fmt(d.costs.total.costSats)}`;
+        document.getElementById('totalCalls').textContent = `${d.costs.total.calls} API calls`;
+        document.getElementById('todayCost').textContent = `⚡${fmt(d.costs.today.costSats)}`;
+        document.getElementById('todayCalls').textContent = `${d.costs.today.calls} calls today`;
+        document.getElementById('tipTotal').textContent = `⚡${d.tips.totalSats}`;
+        document.getElementById('tipCount').textContent = `${d.tips.count} tips`;
+        document.getElementById('userCount').textContent = d.users.count;
+        document.getElementById('visitorCount').textContent = d.visitors.count;
+        document.getElementById('convoCount').textContent = d.conversations.count;
+        document.getElementById('sessionCount').textContent = d.activeSessions;
+        document.getElementById('modelName').textContent = d.model;
+        
+        // Users table
+        const ut = document.getElementById('usersTable');
+        for (const u of d.users.list) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${u.id} ${u.id === 1 ? '<span class="badge badge-admin">admin</span>' : ''}</td>
+            <td class="mono">${(u.pubkey || '').slice(0, 16)}...</td>
+            <td>${u.display_name || '—'}</td>
+            <td class="sats">⚡${u.api_cost ? Number(u.api_cost).toFixed(1) : '0'} <span style="color:var(--text-muted);font-size:11px">(${u.api_calls || 0} calls)</span></td>
+            <td class="sats">⚡${u.total_tipped || 0}</td>
+            <td class="mono" style="font-size:11px">${u.lightning_address || '—'}</td>
+            <td style="font-size:12px;color:var(--text-muted)">${u.last_login || '—'}</td>
+          `;
+          ut.appendChild(tr);
+        }
+        
+        // Daily costs table
+        const dt = document.getElementById('dailyTable');
+        for (const day of d.dailyCosts) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${day.day}</td>
+            <td class="sats">⚡${Number(day.cost).toFixed(1)}</td>
+            <td class="mono">${(day.prompt || 0).toLocaleString()}</td>
+            <td class="mono">${(day.completion || 0).toLocaleString()}</td>
+            <td>${day.calls}</td>
+          `;
+          dt.appendChild(tr);
+        }
+      } catch (err) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = `Error: ${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

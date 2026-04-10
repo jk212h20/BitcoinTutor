@@ -347,6 +347,8 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       session.tokenUsage.prompt += usage.prompt_tokens || 0;
       session.tokenUsage.completion += usage.completion_tokens || 0;
       session.tokenUsage.total += usage.total_tokens || 0;
+      const cost = database.recordApiCost(session.id, session.userId, usage.prompt_tokens || 0, usage.completion_tokens || 0, MODEL);
+      session.costSats = (session.costSats || 0) + cost;
     }
   } catch (err) {
     console.error('LLM call failed:', err);
@@ -526,11 +528,13 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
     if (!res2.ok) throw new Error(`LLM API error on tool follow-up: ${res2.status}`);
     const data2 = await res2.json();
     response = data2.choices[0].message.content;
-    // Track second call tokens
+    // Track second call tokens + cost
     if (data2.usage) {
       session.tokenUsage.prompt += data2.usage.prompt_tokens || 0;
       session.tokenUsage.completion += data2.usage.completion_tokens || 0;
       session.tokenUsage.total += data2.usage.total_tokens || 0;
+      const cost2 = database.recordApiCost(session.id, session.userId, data2.usage.prompt_tokens || 0, data2.usage.completion_tokens || 0, MODEL);
+      session.costSats = (session.costSats || 0) + cost2;
     }
     session.messages.pop();
     session.messages.pop();
@@ -595,6 +599,7 @@ app.post('/api/start', async (req, res) => {
       visitCount: visitorInfo ? visitorInfo.visit_count : 1,
       model: MODEL,
       tokenUsage: session.tokenUsage,
+      costSats: session.costSats || 0,
     });
   } catch (err) {
     console.error('Error starting session:', err);
@@ -618,6 +623,7 @@ app.post('/api/chat', async (req, res) => {
       isLoggedIn: !!session.userId,
       model: MODEL,
       tokenUsage: session.tokenUsage,
+      costSats: session.costSats || 0,
     });
   } catch (err) {
     console.error('Error in chat:', err);
@@ -884,6 +890,44 @@ app.get('/api/claim/status/:k1', (req, res) => {
     paymentHash: session.paymentHash || null,
     error: session.error || null,
   });
+});
+
+// === Admin Routes ===
+
+app.get('/api/admin/stats', (req, res) => {
+  // Auth: check session → user → isAdmin
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  
+  const stats = database.getAdminStats();
+  
+  // Add LND info
+  stats.model = MODEL;
+  stats.faucet = {
+    maxTip: FAUCET_MAX_TIP,
+    maxSession: FAUCET_MAX_SESSION,
+    maxDaily: FAUCET_MAX_DAILY,
+    budgetTotal: FAUCET_BALANCE,
+  };
+  stats.activeSessions = sessions.size;
+  
+  res.json(stats);
+});
+
+app.get('/api/admin/check', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId) {
+    return res.json({ isAdmin: false });
+  }
+  res.json({ isAdmin: database.isAdmin(session.userId) });
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
 // Start server

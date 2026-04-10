@@ -302,9 +302,9 @@
     function updateModelInfo(data) {
       if (!data) return;
       const model = data.model || '';
-      const tokens = data.tokenUsage?.total || 0;
-      const fmt = tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'k' : tokens.toString();
-      modelInfoEl.textContent = tokens > 0 ? `${model} · ${fmt} tokens` : model;
+      const costSats = data.costSats || 0;
+      const fmt = costSats >= 1 ? costSats.toFixed(1) + ' sats' : costSats > 0 ? '<1 sat' : '';
+      modelInfoEl.textContent = fmt ? `${model} · ⚡${fmt} API cost` : model;
     }
     
     // === Visitor ID (localStorage fingerprint) ===

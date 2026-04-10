@@ -95,6 +95,19 @@ async function init() {
   `);
   
   db.run(`
+    CREATE TABLE IF NOT EXISTS api_costs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT,
+      user_id INTEGER,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      cost_sats REAL DEFAULT 0,
+      model TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  
+  db.run(`
     CREATE TABLE IF NOT EXISTS faucet_tips (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -358,6 +371,125 @@ function getTotalTipsToday() {
   return 0;
 }
 
+// === API Cost Tracking ===
+
+// Pricing in sats per 1M tokens (approximate at ~100k sats/$)
+const MODEL_PRICING = {
+  'claude-sonnet-4.6': { input: 300, output: 1500 },     // $3/$15 per 1M
+  'claude-sonnet-4-20250514': { input: 300, output: 1500 },
+  'gpt-4o-mini': { input: 15, output: 60 },               // $0.15/$0.60 per 1M  
+  'gpt-4o': { input: 250, output: 1000 },                  // $2.50/$10 per 1M
+  'default': { input: 300, output: 1500 },
+};
+
+function calculateCostSats(promptTokens, completionTokens, model) {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['default'];
+  const inputCost = (promptTokens / 1000000) * pricing.input;
+  const outputCost = (completionTokens / 1000000) * pricing.output;
+  return Math.round((inputCost + outputCost) * 100) / 100; // 2 decimal places
+}
+
+function recordApiCost(sessionId, userId, promptTokens, completionTokens, model) {
+  const costSats = calculateCostSats(promptTokens, completionTokens, model);
+  db.run(`INSERT INTO api_costs (session_id, user_id, prompt_tokens, completion_tokens, cost_sats, model) VALUES (?, ?, ?, ?, ?, ?)`,
+    [sessionId, userId || null, promptTokens, completionTokens, costSats, model]);
+  // Don't saveDatabase here — caller handles it or auto-save will catch it
+  return costSats;
+}
+
+function getCostForSession(sessionId) {
+  const results = db.exec(`SELECT SUM(cost_sats) as total, SUM(prompt_tokens) as prompt, SUM(completion_tokens) as completion FROM api_costs WHERE session_id = ?`, [sessionId]);
+  if (results.length > 0 && results[0].values[0][0] !== null) {
+    return { costSats: results[0].values[0][0], promptTokens: results[0].values[0][1], completionTokens: results[0].values[0][2] };
+  }
+  return { costSats: 0, promptTokens: 0, completionTokens: 0 };
+}
+
+function getCostForUser(userId) {
+  const results = db.exec(`SELECT SUM(cost_sats) as total, SUM(prompt_tokens) as prompt, SUM(completion_tokens) as completion FROM api_costs WHERE user_id = ?`, [userId]);
+  if (results.length > 0 && results[0].values[0][0] !== null) {
+    return { costSats: results[0].values[0][0], promptTokens: results[0].values[0][1], completionTokens: results[0].values[0][2] };
+  }
+  return { costSats: 0, promptTokens: 0, completionTokens: 0 };
+}
+
+function getSitewideApiCosts() {
+  const results = db.exec(`SELECT SUM(cost_sats), SUM(prompt_tokens), SUM(completion_tokens), COUNT(*) FROM api_costs`);
+  const today = db.exec(`SELECT SUM(cost_sats), COUNT(*) FROM api_costs WHERE date(created_at) = date('now')`);
+  return {
+    total: {
+      costSats: results[0]?.values[0][0] || 0,
+      promptTokens: results[0]?.values[0][1] || 0,
+      completionTokens: results[0]?.values[0][2] || 0,
+      calls: results[0]?.values[0][3] || 0,
+    },
+    today: {
+      costSats: today[0]?.values[0][0] || 0,
+      calls: today[0]?.values[0][1] || 0,
+    },
+  };
+}
+
+// === Admin ===
+
+function isAdmin(userId) {
+  // Admin = user with id 1 (first account to ever login)
+  return userId === 1;
+}
+
+function getAdminStats() {
+  const userCount = db.exec('SELECT COUNT(*) FROM users')[0]?.values[0][0] || 0;
+  const visitorCount = db.exec('SELECT COUNT(*) FROM visitors')[0]?.values[0][0] || 0;
+  const convoCount = db.exec('SELECT COUNT(*) FROM conversations')[0]?.values[0][0] || 0;
+  const costs = getSitewideApiCosts();
+  const tipTotal = db.exec('SELECT SUM(amount), COUNT(*) FROM faucet_tips');
+  const tipSats = tipTotal[0]?.values[0][0] || 0;
+  const tipCount = tipTotal[0]?.values[0][1] || 0;
+  
+  // Per-user breakdown
+  const users = db.exec(`
+    SELECT u.id, u.pubkey, u.display_name, u.created_at, u.last_login, u.sats_received, u.lightning_address,
+           (SELECT SUM(cost_sats) FROM api_costs WHERE user_id = u.id) as api_cost,
+           (SELECT SUM(amount) FROM faucet_tips WHERE user_id = u.id) as total_tipped,
+           (SELECT COUNT(*) FROM api_costs WHERE user_id = u.id) as api_calls
+    FROM users u ORDER BY u.id
+  `);
+  
+  const userList = [];
+  if (users.length > 0) {
+    const cols = users[0].columns;
+    for (const row of users[0].values) {
+      const u = {};
+      cols.forEach((col, i) => u[col] = row[i]);
+      userList.push(u);
+    }
+  }
+  
+  // Recent costs by day
+  const dailyCosts = db.exec(`
+    SELECT date(created_at) as day, SUM(cost_sats) as cost, SUM(prompt_tokens) as prompt, SUM(completion_tokens) as completion, COUNT(*) as calls
+    FROM api_costs GROUP BY date(created_at) ORDER BY day DESC LIMIT 14
+  `);
+  const dailyList = [];
+  if (dailyCosts.length > 0) {
+    const cols = dailyCosts[0].columns;
+    for (const row of dailyCosts[0].values) {
+      const d = {};
+      cols.forEach((col, i) => d[col] = row[i]);
+      dailyList.push(d);
+    }
+  }
+  
+  return {
+    users: { count: userCount, list: userList },
+    visitors: { count: visitorCount },
+    conversations: { count: convoCount },
+    costs,
+    tips: { totalSats: tipSats, count: tipCount },
+    dailyCosts: dailyList,
+  };
+}
+
 function getVisitorLinkedUser(visitorId) {
   const visitor = getVisitor(visitorId);
   if (visitor && visitor.linked_user_id) {
@@ -399,4 +531,13 @@ module.exports = {
   getTipsForSession,
   getTotalTipsForUser,
   getTotalTipsToday,
+  // API Costs
+  recordApiCost,
+  calculateCostSats,
+  getCostForSession,
+  getCostForUser,
+  getSitewideApiCosts,
+  // Admin
+  isAdmin,
+  getAdminStats,
 };
