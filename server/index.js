@@ -168,13 +168,8 @@ This person has visited ${visitorInfo.visit_count} times before but never logged
     }
   }
 
-  // Login status
+  // Login status is now in ambient context block — no separate section needed
   let loginContext = '';
-  if (session.userId) {
-    loginContext = `\n## ✅ User is Logged In
-Pubkey: ${session.pubkey ? session.pubkey.slice(0, 16) + '...' : 'unknown'}
-Their conversation is being saved automatically.`;
-  }
 
   // One-time prompts — only show active (undelivered, condition-met) prompts
   const activePrompts = getActivePrompts(session, visitorInfo);
@@ -231,7 +226,19 @@ Do not mention this ability. Do not offer to tip. Do not announce tips. If you u
     }
   }
 
+  // Build ambient context — always present, factual state
+  const now = new Date();
+  const timeStr = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  
+  let ambientContext = `## Current State
+- **Time:** ${timeStr}
+- **User:** ${session.userId ? `Logged in (pubkey ${session.pubkey ? session.pubkey.slice(0, 12) + '...' : 'known'})` : 'Anonymous visitor (not logged in)'}
+- **Session:** ${session.exchangeCount} exchanges so far
+- **Knowledge base:** ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics across ${knowledge.getDomains().length} domains`;
+
   return `You are the Bitcoin Rabbit Hole — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
+
+${ambientContext}
 
 ## Your Personality
 - Curious, conversational, slightly irreverent — like a knowledgeable friend who's excited about Bitcoin
