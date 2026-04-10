@@ -168,7 +168,7 @@ async function payLightningAddress(address, amountSats, comment = '') {
 /**
  * Create a Lightning invoice (for receiving donations)
  */
-async function createInvoice(amountSats, memo = 'Bitcoin Tutor donation') {
+async function createInvoice(amountSats, memo = 'Bitcoin Rabbit Hole donation') {
   const body = {
     value: String(amountSats),
     memo,

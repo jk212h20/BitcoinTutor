@@ -284,8 +284,8 @@ Include JSON tool calls in your response. The system executes them and provides 
 <tool>{"action": "hashrate"}</tool> <tool>{"action": "network_stats"}</tool> <tool>{"action": "halving_info"}</tool>
 Use blockchain tools proactively when discussing real-time Bitcoin state!
 
-**Generate donation invoice** (when someone wants to support Bitcoin Tutor or donate sats):
-<tool>{"action": "create_donation", "amount": 1000, "memo": "Bitcoin Tutor donation"}</tool>
+**Generate donation invoice** (when someone wants to support Bitcoin Rabbit Hole or donate sats):
+<tool>{"action": "create_donation", "amount": 1000, "memo": "Bitcoin Rabbit Hole donation"}</tool>
 
 **Login:** <tool>{"action": "show_login"}</tool>
 ${session.userId ? `**Tip sats:** <tool>{"action": "send_sats", "amount": 21, "reason": "description"}</tool>
@@ -441,7 +441,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
         if (user && user.sats_received > 0) {
           (async () => {
             try {
-              const result = await lightning.payLightningAddress(addr, user.sats_received, 'Bitcoin Tutor: accumulated tips');
+              const result = await lightning.payLightningAddress(addr, user.sats_received, 'Bitcoin Rabbit Hole: accumulated tips');
               database.deductSatsFromUser(session.userId, user.sats_received);
               console.log(`⚡ Auto-paid ${user.sats_received} sats to ${addr} (hash: ${result.paymentHash})`);
             } catch (err) {
@@ -463,7 +463,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
         let paid = false;
         if (lnAddr) {
           try {
-            const result = await lightning.payLightningAddress(lnAddr, amount, `Bitcoin Tutor: ${action.reason || 'tip'}`);
+            const result = await lightning.payLightningAddress(lnAddr, amount, `Bitcoin Rabbit Hole: ${action.reason || 'tip'}`);
             database.deductSatsFromUser(session.userId, amount);
             paid = true;
             console.log(`⚡ Auto-paid ${amount} sats to ${lnAddr} (hash: ${result.paymentHash})`);
@@ -475,7 +475,7 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       }
     } else if (action.action === 'create_donation') {
       const amount = Math.max(100, Math.min(action.amount || 1000, 1000000));
-      const memo = action.memo || 'Bitcoin Tutor donation';
+      const memo = action.memo || 'Bitcoin Rabbit Hole donation';
       try {
         const invoice = await lightning.createInvoice(amount, memo);
         actionResults.push({ type: 'donation', amount, memo, paymentRequest: invoice.paymentRequest, rHash: invoice.rHash });
@@ -845,7 +845,7 @@ app.get('/api/claim/lnurl', (req, res) => {
     tag: 'withdrawRequest',
     callback: `${BASE_URL}/api/claim/callback`,
     k1,
-    defaultDescription: `Bitcoin Tutor: Claim ${session.amount} sats`,
+    defaultDescription: `Bitcoin Rabbit Hole: Claim ${session.amount} sats`,
     minWithdrawable: session.amount * 1000,
     maxWithdrawable: session.amount * 1000,
   });
