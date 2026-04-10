@@ -177,6 +177,32 @@ Their conversation is being saved automatically.`;
     }
   }
 
+  // Recall hints — scan recent messages for keywords from DELIVERED prompts
+  // This gives the LLM memory of things it said even after the prompt is removed from context
+  const userDelivered = session.userId ? database.getDeliveredPrompts(session.userId) : [];
+  const allDelivered = [...new Set([...userDelivered, ...(session.deliveredSessionPrompts || [])])];
+  if (allDelivered.length > 0) {
+    const recentText = session.messages.slice(-4)
+      .filter(m => m.role === 'user')
+      .map(m => m.content.toLowerCase())
+      .join(' ');
+    
+    const triggeredHints = [];
+    for (const pid of allDelivered) {
+      const prompt = ONE_TIME_PROMPTS.find(p => p.id === pid);
+      if (!prompt?.recall_hint || !prompt?.keywords) continue;
+      const hit = prompt.keywords.some(kw => recentText.includes(kw.toLowerCase()));
+      if (hit) triggeredHints.push(prompt.recall_hint);
+    }
+    
+    if (triggeredHints.length > 0) {
+      promptsContext += '\n## 🔄 Recall (things you previously told this user)\n';
+      for (const hint of triggeredHints) {
+        promptsContext += `- ${hint}\n`;
+      }
+    }
+  }
+
   // Faucet availability (separate from prompt — this is dynamic state info)
   let faucetContext = '';
   if (session.userId) {

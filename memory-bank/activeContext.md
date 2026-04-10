@@ -23,6 +23,7 @@ Deployed and live at https://bitcointutor-production.up.railway.app
 | **Conversation continuity** | ✅ | Last 20 messages from previous session injected into system prompt |
 | **Token tracking** | ✅ | Cumulative prompt/completion/total per session, shown in UI |
 | **Model display** | ✅ | Discreet monospace bar showing model name + token count |
+| **One-time prompts** | ✅ | Configurable suggestions that disappear after delivery — saves tokens, avoids repetition |
 
 ## Key Files
 | File | Purpose |

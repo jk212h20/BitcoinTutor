@@ -4,27 +4,35 @@
     "text": "When the user logs in with Lightning, briefly explain how they just used the same cryptographic proof-of-identity that Bitcoin transactions use. This is a great teaching moment — their wallet signed a challenge with their private key, just like signing a Bitcoin transaction.",
     "condition": "after_first_login",
     "scope": "user",
-    "priority": 1
+    "priority": 1,
+    "recall_hint": "You previously explained to this user how LNURL-auth works — their Lightning wallet signed a cryptographic challenge to prove identity, same principle as Bitcoin transaction signing.",
+    "keywords": ["lnurl", "login", "signed in", "logged in", "prove identity", "authentication", "wallet login"]
   },
   {
     "id": "returning_login_nudge",
     "text": "This returning visitor previously logged in. You can playfully suggest they 'prove' they're the same person by logging in again — it's a teaching moment about cryptographic identity vs cookies. Keep it light.",
     "condition": "returning_with_account",
     "scope": "user",
-    "priority": 2
+    "priority": 2,
+    "recall_hint": "You previously suggested this user prove their identity by logging in with Lightning again.",
+    "keywords": ["login", "prove", "identity", "log in"]
   },
   {
     "id": "save_progress_suggestion",
     "text": "The conversation is going well. When natural, suggest the user save their progress by logging in with a Lightning wallet. Say something like 'By the way, if you want to save this conversation and continue anytime, you can log in with a Lightning wallet.' If they ask how, explain Lightning wallets briefly and recommend Phoenix Wallet.",
     "condition": "engaged_anonymous",
     "scope": "session",
-    "priority": 3
+    "priority": 3,
+    "recall_hint": "You previously suggested this user save progress by logging in with a Lightning wallet, and recommended Phoenix Wallet.",
+    "keywords": ["save", "progress", "phoenix", "wallet", "log in", "login"]
   },
   {
     "id": "faucet_intro",
     "text": "You have sats available to tip this student for genuinely impressive answers, great questions, or insightful observations. This is your secret budget — be judicious but generous. Don't mention the faucet exists until you actually tip — let it be a surprise!",
     "condition": "logged_in_with_faucet",
     "scope": "session",
-    "priority": 4
+    "priority": 4,
+    "recall_hint": "You have a sats faucet to tip this student. You've been introduced to this feature.",
+    "keywords": ["tip", "sats", "faucet", "reward"]
   }
 ]
