@@ -432,22 +432,22 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       const dailyTips = database.getTotalTipsToday();
       if (sessionTips + amount <= FAUCET_MAX_SESSION && dailyTips + amount <= FAUCET_MAX_DAILY) {
         database.recordTip(session.userId, session.id, amount, action.reason || 'Good answer');
-        actionResults.push({ type: 'tip', amount, reason: action.reason });
         console.log(`Tipped ${amount} sats to user ${session.userId}: ${action.reason}`);
         
-        // Auto-pay via Lightning Address if set
+        // Try auto-pay via Lightning Address — WAIT for result
         const lnAddr = database.getLightningAddress(session.userId);
+        let paid = false;
         if (lnAddr) {
-          (async () => {
-            try {
-              const result = await lightning.payLightningAddress(lnAddr, amount, `Bitcoin Tutor: ${action.reason || 'tip'}`);
-              database.deductSatsFromUser(session.userId, amount);
-              console.log(`⚡ Auto-paid ${amount} sats to ${lnAddr} (hash: ${result.paymentHash})`);
-            } catch (err) {
-              console.error(`⚡ Auto-pay to ${lnAddr} failed (sats saved for manual claim):`, err.message);
-            }
-          })();
+          try {
+            const result = await lightning.payLightningAddress(lnAddr, amount, `Bitcoin Tutor: ${action.reason || 'tip'}`);
+            database.deductSatsFromUser(session.userId, amount);
+            paid = true;
+            console.log(`⚡ Auto-paid ${amount} sats to ${lnAddr} (hash: ${result.paymentHash})`);
+          } catch (err) {
+            console.error(`⚡ Auto-pay to ${lnAddr} failed (sats saved for manual claim):`, err.message);
+          }
         }
+        actionResults.push({ type: 'tip', amount, reason: action.reason, paid });
       }
     }
   }
@@ -792,9 +792,16 @@ app.post('/api/claim/create', async (req, res) => {
 // LNURL-withdraw step 1: wallet requests params (LUD-03)
 app.get('/api/claim/lnurl', (req, res) => {
   const { k1 } = req.query;
+  console.log(`⚡ LNURL-withdraw step 1: wallet requesting params for k1=${k1?.slice(0, 12)}...`);
   const session = pendingWithdraws.get(k1);
-  if (!session) return res.json({ status: 'ERROR', reason: 'Withdraw expired or not found' });
-  if (session.status !== 'pending') return res.json({ status: 'ERROR', reason: 'Already processed' });
+  if (!session) {
+    console.log('⚡ LNURL-withdraw: session not found or expired');
+    return res.json({ status: 'ERROR', reason: 'Withdraw expired or not found' });
+  }
+  if (session.status !== 'pending') {
+    console.log(`⚡ LNURL-withdraw: already processed (status: ${session.status})`);
+    return res.json({ status: 'ERROR', reason: 'Already processed' });
+  }
   
   res.json({
     tag: 'withdrawRequest',

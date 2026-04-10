@@ -55,9 +55,9 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `update_notes` — persist observations about students (merged incrementally)
 
 ## Recent Changes (2026-04-09)
-- **Real Lightning payouts**: LNURL-withdraw flow (LND REST → Voltage node). Users earn virtual sats via faucet, then claim them by scanning a QR with their Lightning wallet. Server pays the invoice in background.
-- **One-time prompts with recall**: `knowledge/prompts.json` defines prompts with `recall_hint` + `keywords`. After delivery, if user mentions related keywords, the hint is re-injected so LLM remembers what it said.
-- **Balance indicator**: Header shows "⚡ N sats — Claim" button when user has earned sats
+- **Lightning Address auto-pay**: Users share their Lightning Address (e.g. user@walletofsatoshi.com), tutor saves it via `set_lightning_address` tool. Future tips auto-pay instantly — resolve address → get invoice → pay via LND. No QR scanning needed after setup.
+- **Real Lightning payouts**: LNURL-withdraw flow still available as fallback for users without Lightning Address. Balance indicator + Claim button in header.
+- **One-time prompts with recall**: `knowledge/prompts.json` defines prompts with `recall_hint` + `keywords`. New `lightning_address_ask` prompt suggests sharing LN address after first tip.
 - User notes system, conversation continuity, token tracking, model display (all from earlier today)
 - Fixed quadruple auth notify race condition, session expiry auto-resend
 

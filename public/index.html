@@ -366,8 +366,12 @@
         if (action.type === 'show_login') {
           showLoginQR();
         } else if (action.type === 'tip') {
-          addMessage(`⚡ The tutor just sent you ${action.amount} sats! "${action.reason}"`, 'system');
-          checkBalance(); // Update balance display after tip
+          if (action.paid) {
+            addMessage(`⚡ ${action.amount} sats sent directly to your wallet! "${action.reason}"`, 'system');
+          } else {
+            addMessage(`⚡ You earned ${action.amount} sats! "${action.reason}" — claim them with the button above.`, 'system');
+          }
+          checkBalance();
         }
       }
     }
