@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Bitcoin Rabbit Hole</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,10 +44,8 @@
     
     .header .logo {
       width: 32px; height: 32px;
-      background: var(--accent);
       border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: bold; font-size: 18px; color: #fff;
+      object-fit: cover;
     }
     
     .header h1 { font-size: 18px; font-weight: 600; }
@@ -270,7 +268,7 @@
 </head>
 <body>
   <div class="header">
-    <div class="logo">₿</div>
+    <img class="logo" src="/favicon.png" alt="Bitcoin Rabbit Hole">
     <h1>Bitcoin Rabbit Hole</h1>
     <span class="login-indicator" id="loginIndicator">⚡ Logged in</span>
     <a href="/admin" id="adminLink" style="display:none;font-size:12px;padding:4px 10px;border-radius:12px;background:#1a1a2e;border:1px solid var(--accent);color:var(--accent);text-decoration:none;">Admin</a>
