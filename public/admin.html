@@ -100,20 +100,45 @@
     
     initAdmin();
     
+    async function createFreshSession() {
+      const visitorId = localStorage.getItem('btc-tutor-visitor') || crypto.randomUUID();
+      localStorage.setItem('btc-tutor-visitor', visitorId);
+      const startRes = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitorId }),
+      });
+      const startData = await startRes.json();
+      sessionId = startData.sessionId;
+      localStorage.setItem('btc-tutor-session', sessionId);
+    }
+    
     async function initAdmin() {
-      // Step 1: ensure we have a session
+      // Step 1: ensure we have a valid session
+      if (sessionId) {
+        // Verify the session still exists on the server
+        try {
+          const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
+          const checkData = await checkRes.json();
+          if (checkData.isAdmin) {
+            loadAdmin();
+            return;
+          }
+          // Check if session actually exists (admin check returns false for both "not admin" and "no session")
+          const sessionRes = await fetch(`/api/session/${sessionId}`);
+          if (!sessionRes.ok) {
+            // Session is stale — create fresh
+            sessionId = null;
+          }
+        } catch (e) {
+          sessionId = null;
+        }
+      }
+      
+      // Create session if we don't have one (or it was stale)
       if (!sessionId) {
         try {
-          const visitorId = localStorage.getItem('btc-tutor-visitor') || crypto.randomUUID();
-          localStorage.setItem('btc-tutor-visitor', visitorId);
-          const startRes = await fetch('/api/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ visitorId }),
-          });
-          const startData = await startRes.json();
-          sessionId = startData.sessionId;
-          localStorage.setItem('btc-tutor-session', sessionId);
+          await createFreshSession();
         } catch (e) {
           document.getElementById('loading').style.display = 'none';
           document.getElementById('error').style.display = 'block';
@@ -122,17 +147,7 @@
         }
       }
       
-      // Step 2: check if already admin
-      try {
-        const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
-        const checkData = await checkRes.json();
-        if (checkData.isAdmin) {
-          loadAdmin();
-          return;
-        }
-      } catch (e) { /* continue to login */ }
-      
-      // Step 3: not admin — show login QR
+      // Show login QR
       document.getElementById('loading').style.display = 'none';
       showAdminLogin();
     }
