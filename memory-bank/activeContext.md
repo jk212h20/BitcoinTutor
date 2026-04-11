@@ -57,7 +57,12 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `send_sats` — tip logged-in users
 - `update_notes` — persist observations about students (merged incrementally)
 
-## Recent Changes (2026-04-11, Session 6)
+## Recent Changes (2026-04-11, Session 7)
+- **Seamless session recovery** — Frontend sends full conversation history with every `/api/chat` request. Server reconstructs session from history when session is missing (after redeploy). Users never see "session expired" — LLM retains full context.
+- **Admin login flow** — Admin page now detects stale sessions (from previous deploys), creates fresh session, shows LNURL-auth QR, and verifies admin access before loading dashboard.
+- **Icons** — Bitcoin ₿ SVG as favicon (`public/favicon.svg`), RabbitHoleIcon.png as header logo in the top bar.
+
+## Changes (2026-04-11, Session 6)
 - **"Bitcoin Rabbit" identity** — Refers to itself as the Bitcoin Rabbit; epistemically humble ("think for yourselves"); sender label `🐇 Bitcoin Rabbit`
 - **Challenge logging system** — `log_challenge` tool: Rabbit silently logs user disputes to `challenges` DB table (user_claim, rabbit_said, topic, severity, assessment). NOT in Rabbit's context — goes to admin review queue
 - **Admin challenges viewer** — Admin dashboard shows all challenges with severity badges, verdict input per challenge
