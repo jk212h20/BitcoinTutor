@@ -126,6 +126,21 @@ async function init() {
     )
   `);
   
+  db.run(`
+    CREATE TABLE IF NOT EXISTS challenges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT,
+      user_id INTEGER,
+      user_claim TEXT NOT NULL,
+      rabbit_said TEXT,
+      topic TEXT,
+      severity TEXT DEFAULT 'minor',
+      rabbit_assessment TEXT,
+      admin_verdict TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  
   saveDatabase();
   console.log('Database tables ready');
 }
@@ -515,6 +530,30 @@ function setSetting(key, value) {
   saveDatabase();
 }
 
+// === Challenges (global learning log) ===
+
+function logChallenge(sessionId, userId, userClaim, rabbitSaid, topic, severity, rabbitAssessment) {
+  db.run(`INSERT INTO challenges (session_id, user_id, user_claim, rabbit_said, topic, severity, rabbit_assessment) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [sessionId, userId || null, userClaim, rabbitSaid || null, topic || null, severity || 'minor', rabbitAssessment || null]);
+  saveDatabase();
+}
+
+function getChallenges(limit = 50) {
+  const results = db.exec(`SELECT * FROM challenges ORDER BY created_at DESC LIMIT ?`, [limit]);
+  if (!results.length) return [];
+  const cols = results[0].columns;
+  return results[0].values.map(row => {
+    const obj = {};
+    cols.forEach((col, i) => obj[col] = row[i]);
+    return obj;
+  });
+}
+
+function updateChallengeVerdict(id, verdict) {
+  db.run(`UPDATE challenges SET admin_verdict = ? WHERE id = ?`, [verdict, id]);
+  saveDatabase();
+}
+
 function getVisitorLinkedUser(visitorId) {
   const visitor = getVisitor(visitorId);
   if (visitor && visitor.linked_user_id) {
@@ -568,4 +607,8 @@ module.exports = {
   // Settings
   getSetting,
   setSetting,
+  // Challenges
+  logChallenge,
+  getChallenges,
+  updateChallengeVerdict,
 };

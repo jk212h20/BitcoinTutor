@@ -331,7 +331,7 @@
     function addMessage(content, sender) {
       const msg = document.createElement('div');
       msg.className = `message ${sender}`;
-      const senderLabel = sender === 'bot' ? '🐇 Rabbit Hole' : sender === 'system' ? '⚡ System' : 'You';
+      const senderLabel = sender === 'bot' ? '🐇 Bitcoin Rabbit' : sender === 'system' ? '⚡ System' : 'You';
       msg.innerHTML = `
         <div class="sender">${senderLabel}</div>
         <div class="content">${formatMessage(content)}</div>

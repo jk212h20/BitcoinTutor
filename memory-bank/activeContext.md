@@ -56,10 +56,17 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `send_sats` — tip logged-in users
 - `update_notes` — persist observations about students (merged incrementally)
 
-## Recent Changes (2026-04-10, Session 5)
+## Recent Changes (2026-04-11, Session 6)
+- **Fixed DB persistence** — Added Railway volume at `/data` + `DATABASE_PATH=/data/tutor.db`. DB was previously ephemeral (fresh on every deploy)!
+- **Removed `MODEL` env var** — DB `settings` table is now sole source of truth for model selection
+- **No tools on welcome message** — First message instruction explicitly forbids tool calls (was showing price)
+- **Added `price` tool** — Dedicated BTC price + market cap (was buried in `network_stats`)
+- **Added `block_txs` tool** — Analyze a block's txs: top 5 by value, top 5 by fee, fee distribution stats
+- **Ambient context block** — System prompt always shows: time, login status, exchange count, KB size
+
+## Changes (2026-04-10, Session 5)
 - **Rebranded to "Bitcoin Rabbit Hole"** — name, personality, subtitle ("How deep do you want to go?"), sender label (🐇), all references
-- **Tipping heavily restrained** — system prompt now says tip only for truly impressive breakthroughs (1 in 10+ exchanges), never announce or offer tipping
-- **Model choice persisted in DB** — `settings` table survives redeploys
+- **Tipping heavily restrained** — system prompt says tip only rarely and silently
 
 ## Changes (2026-04-09, Session 4)
 - **Admin dashboard** at `/admin` — API costs (total+daily), users, tips, conversations, model switcher
@@ -83,6 +90,6 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - **GitHub**: https://github.com/jk212h20/BitcoinTutor.git (master branch)
 
 ## Env Vars (Railway)
-- `PPQ_API_KEY`, `PPQ_BASE_URL`, `MODEL`, `BASE_URL`, `DATABASE_PATH=/data/tutor.db`
+- `PPQ_API_KEY`, `PPQ_BASE_URL`, `BASE_URL`, `DATABASE_PATH=/data/tutor.db`
 - `PORT=3456`, `FAUCET_BALANCE`, `FAUCET_MAX_TIP`, `FAUCET_MAX_SESSION`, `FAUCET_MAX_DAILY`
 - `LND_REST_URL` (Voltage node: predictions.m.voltageapp.io:8080), `LND_MACAROON`

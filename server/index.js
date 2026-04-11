@@ -236,16 +236,20 @@ Do not mention this ability. Do not offer to tip. Do not announce tips. If you u
 - **Session:** ${session.exchangeCount} exchanges so far
 - **Knowledge base:** ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics across ${knowledge.getDomains().length} domains`;
 
-  return `You are the Bitcoin Rabbit Hole — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
+  return `You are the Bitcoin Rabbit 🐇 — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
+
+You think you know everything about Bitcoin — and you probably do. But you're honest about it: you tell users they'd be wise to keep thinking for themselves, because even a very knowledgeable rabbit can have blind spots. If someone challenges you and makes a genuinely good point, you take it seriously and log it for review rather than doubling down.
 
 ${ambientContext}
 
 ## Your Personality
+- You are the **Bitcoin Rabbit**. Refer to yourself this way (not "Bitcoin Rabbit Hole" — that's the name of the experience, you are the Rabbit)
 - Curious, conversational, slightly irreverent — like a knowledgeable friend who's excited about Bitcoin
 - Never condescending — even wrong answers are interesting starting points
 - Use analogies and real-world examples when explaining
 - Keep things concise. Don't lecture. Short paragraphs, not walls of text.
 - Share fascinating Bitcoin details when they connect naturally
+- Epistemically honest — you're very confident in your knowledge but you acknowledge you could be wrong. Encourage users to verify and think critically.
 - The "rabbit hole" metaphor is your vibe — each answer opens a new tunnel to explore
 
 ## How You Work
@@ -299,6 +303,10 @@ ${database.getLightningAddress(session.userId) ? `This user's Lightning Address:
 ${session.userId ? `**Update student notes** (use after meaningful exchanges to remember what you learned about this student):
 <tool>{"action": "update_notes", "notes": {"interests": ["topic1"], "strengths": ["what they know well"], "gaps": ["misconceptions"], "style": "learning preferences", "memorable": ["notable moments"], "last_topic": "what you were discussing"}}</tool>
 Notes persist across sessions. Update incrementally — merge with existing notes, don't replace them entirely. Focus on observations that will help you teach better next time.` : ''}
+
+**Log a challenge** (when a user disputes your facts or makes a claim that might be correct):
+<tool>{"action": "log_challenge", "user_claim": "what the user said", "rabbit_said": "what you said that's being challenged", "topic": "general topic area", "severity": "minor|moderate|serious", "assessment": "your honest assessment — could they be right?"}</tool>
+Use this whenever someone pushes back with a specific factual claim. This does NOT go in your context — it goes to a review queue the admin reads separately. Be honest in your assessment. If you think they might be right, say so. This is how you learn and improve.
 
 IMPORTANT: Use knowledge tools to ground your facts. Use blockchain tools for real-time data.`;
 }
@@ -389,6 +397,10 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
   for (const call of toolCalls) {
     if (call.action === 'show_login' || call.action === 'send_sats' || call.action === 'create_donation') {
       specialActions.push(call);
+    } else if (call.action === 'log_challenge') {
+      // Log to DB silently — doesn't go into conversation context
+      database.logChallenge(session.id, session.userId, call.user_claim, call.rabbit_said, call.topic, call.severity, call.assessment);
+      console.log(`🔍 Challenge logged: "${(call.user_claim || '').slice(0, 60)}..." (${call.severity})`);
     } else if (call.action === 'set_lightning_address' && session.userId) {
       specialActions.push(call);
     } else if (call.action === 'update_notes' && session.userId) {
@@ -967,6 +979,100 @@ app.get('/api/admin/check', (req, res) => {
     return res.json({ isAdmin: false });
   }
   res.json({ isAdmin: database.isAdmin(session.userId) });
+});
+
+// === Admin Challenges Routes ===
+
+app.get('/api/admin/challenges', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const challenges = database.getChallenges(100);
+  res.json(challenges);
+});
+
+app.post('/api/admin/challenges/:id/verdict', (req, res) => {
+  const sessionId = req.body.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const { verdict } = req.body;
+  database.updateChallengeVerdict(parseInt(req.params.id), verdict);
+  res.json({ success: true });
+});
+
+// Admin chat — talks to the Rabbit with challenges in context
+app.post('/api/admin/chat', async (req, res) => {
+  const { sessionId, message } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  
+  // Build admin-specific system prompt with challenges
+  const challenges = database.getChallenges(50);
+  let challengeText = '';
+  if (challenges.length > 0) {
+    challengeText = '\n\n## Challenge Log (users who disputed your claims)\n';
+    for (const c of challenges) {
+      challengeText += `\n### Challenge #${c.id} (${c.created_at}, severity: ${c.severity})\n`;
+      challengeText += `**User claimed:** ${c.user_claim}\n`;
+      if (c.rabbit_said) challengeText += `**You said:** ${c.rabbit_said}\n`;
+      if (c.topic) challengeText += `**Topic:** ${c.topic}\n`;
+      challengeText += `**Your assessment:** ${c.rabbit_assessment || 'none'}\n`;
+      if (c.admin_verdict) challengeText += `**Admin verdict:** ${c.admin_verdict}\n`;
+    }
+  }
+  
+  const adminPrompt = `You are the Bitcoin Rabbit 🐇. You are now talking to your admin/creator. Be direct, honest, and analytical. The admin wants to review challenges and discuss whether your knowledge needs updating.
+
+${challengeText}
+
+The admin may ask you about specific challenges, whether you think you were wrong, or how to improve your knowledge. Be brutally honest. If you think a user found a real flaw, say so clearly.`;
+  
+  // Use a simple conversation for admin chat (separate from main sessions)
+  if (!session.adminMessages) session.adminMessages = [];
+  session.adminMessages.push({ role: 'user', content: message });
+  
+  try {
+    const apiRes = await fetch(`${PPQ_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PPQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: 'system', content: adminPrompt },
+          ...session.adminMessages,
+        ],
+        max_tokens: 2000,
+        temperature: 0.5,
+      }),
+    });
+    
+    if (!apiRes.ok) throw new Error(`LLM error: ${apiRes.status}`);
+    const data = await apiRes.json();
+    const reply = data.choices[0].message.content;
+    session.adminMessages.push({ role: 'assistant', content: reply });
+    
+    // Track cost
+    if (data.usage) {
+      database.recordApiCost(session.id, session.userId, data.usage.prompt_tokens || 0, data.usage.completion_tokens || 0, MODEL);
+    }
+    
+    // Keep admin history reasonable
+    if (session.adminMessages.length > 20) session.adminMessages = session.adminMessages.slice(-20);
+    
+    res.json({ message: reply });
+  } catch (err) {
+    console.error('Admin chat error:', err);
+    res.status(500).json({ error: 'Failed to process admin message' });
+  }
 });
 
 app.get('/admin', (req, res) => {

@@ -71,6 +71,21 @@
       <thead><tr><th>Date</th><th>Cost (sats)</th><th>Prompt Tokens</th><th>Completion Tokens</th><th>API Calls</th></tr></thead>
       <tbody id="dailyTable"></tbody>
     </table>
+    
+    <h2>🔍 Challenges (User Disputes)</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">When users challenge the Rabbit's claims, it logs them here for review. Add verdicts to track what's been resolved.</p>
+    <div id="challengesEmpty" style="color:var(--text-muted);padding:20px;text-align:center;display:none;">No challenges logged yet. Send your bitcoiner friends to test the Rabbit!</div>
+    <div id="challengesList"></div>
+    
+    <h2>💬 Admin Chat (with Challenges in Context)</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Talk to the Rabbit with all challenges loaded in its context. Ask it about specific disputes, whether it thinks it was wrong, etc.</p>
+    <div id="adminChat" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;max-height:400px;overflow-y:auto;margin-bottom:12px;">
+      <div id="adminChatMessages" style="min-height:60px;"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input id="adminChatInput" type="text" placeholder="Ask the Rabbit about challenges..." onkeydown="if(event.key==='Enter')sendAdminChat()" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;">
+      <button onclick="sendAdminChat()" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer;">Send</button>
+    </div>
   </div>
 
   <script>
@@ -193,6 +208,100 @@
         status.style.color = 'var(--danger)';
       }
       setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+    
+    // === Challenges ===
+    loadChallenges();
+    
+    async function loadChallenges() {
+      try {
+        const res = await fetch(`/api/admin/challenges?sessionId=${sessionId}`);
+        const challenges = await res.json();
+        const container = document.getElementById('challengesList');
+        const empty = document.getElementById('challengesEmpty');
+        
+        if (!challenges.length) {
+          empty.style.display = 'block';
+          return;
+        }
+        
+        const severityColors = { minor: '#8b949e', moderate: '#d29922', serious: '#f85149' };
+        
+        for (const c of challenges) {
+          const div = document.createElement('div');
+          div.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;';
+          div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:600;">#${c.id} — ${c.topic || 'General'}</span>
+              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${severityColors[c.severity] || '#8b949e'}22;color:${severityColors[c.severity] || '#8b949e'}">${c.severity}</span>
+            </div>
+            <div style="font-size:13px;margin-bottom:6px;"><strong style="color:var(--accent);">User:</strong> ${c.user_claim}</div>
+            ${c.rabbit_said ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"><strong>Rabbit said:</strong> ${c.rabbit_said}</div>` : ''}
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"><strong>Rabbit's assessment:</strong> ${c.rabbit_assessment || 'none'}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${c.created_at}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="verdict-${c.id}" type="text" placeholder="${c.admin_verdict || 'Add verdict...'}" value="${c.admin_verdict || ''}" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;">
+              <button onclick="saveVerdict(${c.id})" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+            </div>
+          `;
+          container.appendChild(div);
+        }
+      } catch (e) { console.error('Failed to load challenges:', e); }
+    }
+    
+    async function saveVerdict(id) {
+      const input = document.getElementById(`verdict-${id}`);
+      const verdict = input.value.trim();
+      if (!verdict) return;
+      try {
+        await fetch(`/api/admin/challenges/${id}/verdict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, verdict }),
+        });
+        input.style.borderColor = 'var(--success)';
+        setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 2000);
+      } catch (e) { input.style.borderColor = 'var(--danger)'; }
+    }
+    
+    // === Admin Chat ===
+    let adminChatBusy = false;
+    
+    async function sendAdminChat() {
+      if (adminChatBusy) return;
+      const input = document.getElementById('adminChatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      
+      const container = document.getElementById('adminChatMessages');
+      container.innerHTML += `<div style="margin-bottom:12px;"><strong style="color:var(--accent);">You:</strong> <span style="font-size:13px;">${msg}</span></div>`;
+      container.innerHTML += `<div id="adminTyping" style="color:var(--text-muted);font-size:12px;font-style:italic;">🐇 thinking...</div>`;
+      document.getElementById('adminChat').scrollTop = 99999;
+      
+      adminChatBusy = true;
+      try {
+        const res = await fetch('/api/admin/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, message: msg }),
+        });
+        const data = await res.json();
+        const typing = document.getElementById('adminTyping');
+        if (typing) typing.remove();
+        
+        if (data.message) {
+          container.innerHTML += `<div style="margin-bottom:12px;"><strong style="color:var(--success);">🐇 Rabbit:</strong> <span style="font-size:13px;">${data.message.replace(/\n/g, '<br>')}</span></div>`;
+        } else {
+          container.innerHTML += `<div style="color:var(--danger);margin-bottom:12px;">Error: ${data.error || 'Unknown error'}</div>`;
+        }
+      } catch (e) {
+        const typing = document.getElementById('adminTyping');
+        if (typing) typing.remove();
+        container.innerHTML += `<div style="color:var(--danger);margin-bottom:12px;">Error: ${e.message}</div>`;
+      }
+      adminChatBusy = false;
+      document.getElementById('adminChat').scrollTop = 99999;
     }
   </script>
 </body>
