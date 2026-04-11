@@ -323,10 +323,10 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       } else if (visitorInfo.visit_count > 1) {
         firstInstruction = `[SYSTEM: This person has visited ${visitorInfo.visit_count} times before but never logged in. Warm welcome, mention their previous topics if available (${visitorInfo.last_topics.join(', ') || 'none'}). Don't mention login yet.]`;
       } else {
-        firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains.]`;
+        firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains. Do NOT use any tool calls in this first message — no blockchain lookups, no price checks, nothing. Just a warm human greeting.]`;
       }
     } else {
-      firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains.]`;
+      firstInstruction = `[SYSTEM: New visitor. Give them a warm, brief welcome (1-2 sentences max) and ask what aspects of Bitcoin interest them most. Keep it super short and inviting. Do NOT mention a knowledge base, tools, or domains. Do NOT use any tool calls in this first message — no blockchain lookups, no price checks, nothing. Just a warm human greeting.]`;
     }
     messages = [{ role: 'user', content: firstInstruction }];
   }
