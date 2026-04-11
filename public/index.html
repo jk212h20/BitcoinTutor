@@ -689,6 +689,21 @@
       }
     }
     
+    // Collect conversation history from DOM for session recovery
+    function getConversationHistory() {
+      const messages = [];
+      const msgEls = messagesEl.querySelectorAll('.message.user, .message.bot');
+      for (const el of msgEls) {
+        const contentEl = el.querySelector('.content');
+        if (!contentEl) continue;
+        const role = el.classList.contains('user') ? 'user' : 'assistant';
+        // Get text content, strip HTML formatting
+        const text = contentEl.textContent.trim();
+        if (text) messages.push({ role, content: text });
+      }
+      return messages;
+    }
+    
     async function sendMessage() {
       const text = inputEl.value.trim();
       if (!text || isLoading) return;
@@ -708,10 +723,13 @@
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
         
+        // Always include conversation history — server uses it to reconstruct lost sessions
+        const history = getConversationHistory();
+        
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, message: text }),
+          body: JSON.stringify({ sessionId, message: text, history }),
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -719,37 +737,6 @@
         const data = await res.json();
         
         if (data.error) {
-          if (res.status === 404) {
-            hideLoading();
-            isLoading = false;
-            addMessage("Session expired — starting fresh and resending your message...", 'system');
-            await startNewChat();
-            // Re-send the user's message in the new session
-            if (sessionId && text) {
-              isLoading = true;
-              setInputEnabled(false);
-              showLoading();
-              try {
-                const retry = await fetch('/api/chat', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ sessionId, message: text }),
-                });
-                const retryData = await retry.json();
-                hideLoading();
-                if (retryData.message) {
-                  addMessage(retryData.message, 'bot');
-                  handleActions(retryData.actions);
-                }
-              } catch (retryErr) {
-                hideLoading();
-                console.error('Retry failed:', retryErr);
-              }
-              isLoading = false;
-              setInputEnabled(true);
-            }
-            return;
-          }
           throw new Error(data.error);
         }
         

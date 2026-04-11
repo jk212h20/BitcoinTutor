@@ -16,7 +16,7 @@ const lightning = require('./lightning');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Request logging
 app.use((req, res, next) => {
@@ -638,10 +638,30 @@ app.post('/api/start', async (req, res) => {
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { sessionId, message } = req.body;
+    const { sessionId, message, history } = req.body;
     if (!sessionId || !message) return res.status(400).json({ error: 'sessionId and message required' });
     
-    const session = sessions.get(sessionId);
+    let session = sessions.get(sessionId);
+    
+    // Session lost (e.g. server redeployed) — reconstruct from client history
+    if (!session && history && history.length > 0) {
+      console.log(`♻️ Reconstructing session ${sessionId} from ${history.length} client messages`);
+      session = createSession(null);
+      // Override the generated ID with the original so client stays in sync
+      sessions.delete(session.id);
+      session.id = sessionId;
+      sessions.set(sessionId, session);
+      
+      // Rebuild message history from client-provided messages
+      for (const msg of history) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          session.messages.push({ role: msg.role, content: msg.content });
+          if (msg.role === 'user') session.exchangeCount++;
+        }
+      }
+      console.log(`♻️ Restored ${session.messages.length} messages, ${session.exchangeCount} exchanges`);
+    }
+    
     if (!session) return res.status(404).json({ error: 'Session not found. Start a new conversation.' });
     
     const result = await callLLM(session, message);
