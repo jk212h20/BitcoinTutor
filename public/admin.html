@@ -41,6 +41,12 @@
   
   <div id="loading">Loading admin data...</div>
   <div id="error"></div>
+  <div id="loginSection" style="display:none;text-align:center;padding:40px 20px;">
+    <h2 style="color:var(--accent);margin-bottom:12px;">⚡ Prove You're the Admin</h2>
+    <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px;">Scan with your Lightning wallet to log in</p>
+    <div id="adminQR"></div>
+    <div id="adminQRStatus" style="margin-top:12px;font-size:13px;color:var(--text-muted);">Waiting for wallet scan...</div>
+  </div>
   <div id="content" style="display:none">
     <div class="grid">
       <div class="card"><div class="label">API Cost (Total)</div><div class="value" id="totalCost">—</div><div class="sub" id="totalCalls">— calls</div></div>
@@ -89,28 +95,117 @@
   </div>
 
   <script>
-    // Get sessionId from main app's localStorage or URL
-    const sessionId = new URLSearchParams(window.location.search).get('s') || localStorage.getItem('btc-tutor-session');
+    // Get or create sessionId
+    let sessionId = new URLSearchParams(window.location.search).get('s') || localStorage.getItem('btc-tutor-session');
     
-    if (!sessionId) {
+    initAdmin();
+    
+    async function initAdmin() {
+      // Step 1: ensure we have a session
+      if (!sessionId) {
+        try {
+          const visitorId = localStorage.getItem('btc-tutor-visitor') || crypto.randomUUID();
+          localStorage.setItem('btc-tutor-visitor', visitorId);
+          const startRes = await fetch('/api/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visitorId }),
+          });
+          const startData = await startRes.json();
+          sessionId = startData.sessionId;
+          localStorage.setItem('btc-tutor-session', sessionId);
+        } catch (e) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('error').textContent = 'Failed to create session. Try refreshing.';
+          return;
+        }
+      }
+      
+      // Step 2: check if already admin
+      try {
+        const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
+        const checkData = await checkRes.json();
+        if (checkData.isAdmin) {
+          loadAdmin();
+          return;
+        }
+      } catch (e) { /* continue to login */ }
+      
+      // Step 3: not admin — show login QR
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'block';
-      document.getElementById('error').textContent = 'No session found. Start a chat and log in with Lightning first, then come back here.';
-    } else {
-      loadAdmin();
+      showAdminLogin();
+    }
+    
+    async function showAdminLogin() {
+      document.getElementById('loginSection').style.display = 'block';
+      try {
+        const res = await fetch('/api/auth/challenge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + data.lnurl)}`;
+        document.getElementById('adminQR').innerHTML = `
+          <img src="${qrUrl}" alt="LNURL-auth QR" style="border-radius:8px;background:white;padding:12px;max-width:220px;" />
+          <div style="margin-top:12px;font-size:11px;color:var(--text-muted);word-break:break-all;cursor:pointer;padding:8px;" onclick="navigator.clipboard.writeText('${data.lnurl}').then(()=>{this.textContent='Copied!'})">
+            ${data.lnurl.slice(0, 40)}...
+          </div>
+          <div style="margin-top:12px;font-size:13px;color:var(--text-muted);">
+            <a href="lightning:${data.lnurl}" style="color:var(--accent);text-decoration:none;">Open in wallet app</a>
+          </div>
+        `;
+        
+        // Poll for auth
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          if (attempts > 150) {
+            clearInterval(poll);
+            document.getElementById('adminQRStatus').textContent = 'Login expired. Refresh to try again.';
+            return;
+          }
+          try {
+            const sr = await fetch(`/api/auth/status/${data.k1}`);
+            const sd = await sr.json();
+            if (sd.status === 'authenticated') {
+              clearInterval(poll);
+              document.getElementById('adminQRStatus').textContent = '✅ Logged in! Checking admin access...';
+              document.getElementById('adminQRStatus').style.color = 'var(--success)';
+              
+              // Notify server (links session to user)
+              await fetch('/api/auth/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, isNewUser: sd.isNewUser }),
+              });
+              
+              // Check admin
+              const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
+              const checkData = await checkRes.json();
+              if (checkData.isAdmin) {
+                document.getElementById('loginSection').style.display = 'none';
+                loadAdmin();
+              } else {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Access denied. This wallet is not the admin account (first Lightning login).';
+              }
+            }
+          } catch (e) { /* retry */ }
+        }, 2000);
+      } catch (e) {
+        document.getElementById('adminQRStatus').textContent = 'Failed to generate login. Refresh to try again.';
+        document.getElementById('adminQRStatus').style.color = 'var(--danger)';
+      }
     }
     
     async function loadAdmin() {
       try {
-        // Check admin access
-        const checkRes = await fetch(`/api/admin/check?sessionId=${sessionId}`);
-        const checkData = await checkRes.json();
-        if (!checkData.isAdmin) {
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('error').style.display = 'block';
-          document.getElementById('error').textContent = 'Access denied. Only the first Lightning login (admin) can access this page.';
-          return;
-        }
+        document.getElementById('loading').style.display = 'block';
         
         const res = await fetch(`/api/admin/stats?sessionId=${sessionId}`);
         const d = await res.json();
@@ -133,6 +228,9 @@
         document.getElementById('sessionCount').textContent = d.activeSessions;
         // Load model switcher
         loadModels(d.model);
+        
+        // Load challenges
+        loadChallenges();
         
         // Users table
         const ut = document.getElementById('usersTable');
@@ -211,8 +309,6 @@
     }
     
     // === Challenges ===
-    loadChallenges();
-    
     async function loadChallenges() {
       try {
         const res = await fetch(`/api/admin/challenges?sessionId=${sessionId}`);

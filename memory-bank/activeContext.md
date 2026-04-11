@@ -47,6 +47,7 @@ Deployed and live at https://bitcointutor-production.up.railway.app
 - **faucet_tips**: id, user_id, session_id, amount, reason
 - **api_costs**: id, session_id, user_id, prompt_tokens, completion_tokens, cost_sats, model, created_at
 - **settings**: key (PK), value — persists admin settings (e.g. `model` → `claude-sonnet-4.6`)
+- **challenges**: id, session_id, user_id, user_claim, rabbit_said, topic, severity, rabbit_assessment, admin_verdict, created_at
 
 ## LLM Tool Calls
 The LLM can use `<tool>{...}</tool>` tags for:
@@ -57,6 +58,10 @@ The LLM can use `<tool>{...}</tool>` tags for:
 - `update_notes` — persist observations about students (merged incrementally)
 
 ## Recent Changes (2026-04-11, Session 6)
+- **"Bitcoin Rabbit" identity** — Refers to itself as the Bitcoin Rabbit; epistemically humble ("think for yourselves"); sender label `🐇 Bitcoin Rabbit`
+- **Challenge logging system** — `log_challenge` tool: Rabbit silently logs user disputes to `challenges` DB table (user_claim, rabbit_said, topic, severity, assessment). NOT in Rabbit's context — goes to admin review queue
+- **Admin challenges viewer** — Admin dashboard shows all challenges with severity badges, verdict input per challenge
+- **Admin chat** — Talk to the Rabbit in admin panel with all challenges loaded in context. Separate conversation from main sessions
 - **Fixed DB persistence** — Added Railway volume at `/data` + `DATABASE_PATH=/data/tutor.db`. DB was previously ephemeral (fresh on every deploy)!
 - **Removed `MODEL` env var** — DB `settings` table is now sole source of truth for model selection
 - **No tools on welcome message** — First message instruction explicitly forbids tool calls (was showing price)
