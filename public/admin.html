@@ -79,13 +79,40 @@
       <tbody id="dailyTable"></tbody>
     </table>
     
+    <h2>📚 Wiki Review Queue</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">The Rabbit proposes wiki edits from conversations. Review, approve, or reject them here.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div id="wikiStats" style="font-size:12px;color:var(--text-muted);flex:1;"></div>
+      <select id="wikiFilter" onchange="loadWikiEdits(this.value)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div id="wikiEditsEmpty" style="color:var(--text-muted);padding:20px;text-align:center;display:none;">No pending wiki edits. Chat with the Rabbit to generate proposals!</div>
+    <div id="wikiEditsList"></div>
+    
+    <!-- Wiki page viewer modal -->
+    <div id="wikiModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100;overflow-y:auto;padding:40px 20px;">
+      <div style="max-width:700px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 id="wikiModalTitle" style="color:var(--accent);font-size:16px;"></h3>
+          <button onclick="document.getElementById('wikiModal').style.display='none'" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;">✕</button>
+        </div>
+        <div id="wikiModalMeta" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;"></div>
+        <pre id="wikiModalContent" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;max-height:500px;overflow-y:auto;"></pre>
+        <div id="wikiModalActions" style="margin-top:16px;display:flex;gap:8px;"></div>
+      </div>
+    </div>
+
     <h2>🔍 Challenges (User Disputes)</h2>
-    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">When users challenge the Rabbit's claims, it logs them here for review. Add verdicts to track what's been resolved.</p>
-    <div id="challengesEmpty" style="color:var(--text-muted);padding:20px;text-align:center;display:none;">No challenges logged yet. Send your bitcoiner friends to test the Rabbit!</div>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">When users challenge the Rabbit's claims, it logs them here for review.</p>
+    <div id="challengesEmpty" style="color:var(--text-muted);padding:20px;text-align:center;display:none;">No challenges logged yet.</div>
     <div id="challengesList"></div>
     
-    <h2>💬 Admin Chat (with Challenges in Context)</h2>
-    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Talk to the Rabbit with all challenges loaded in its context. Ask it about specific disputes, whether it thinks it was wrong, etc.</p>
+    <h2>💬 Admin Chat</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Talk to the Rabbit about challenges, wiki edits, or anything else.</p>
     <div id="adminChat" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;max-height:400px;overflow-y:auto;margin-bottom:12px;">
       <div id="adminChatMessages" style="min-height:60px;"></div>
     </div>
@@ -245,6 +272,10 @@
         // Load model switcher
         loadModels(d.model);
         
+        // Load wiki edits + stats
+        loadWikiStats();
+        loadWikiEdits('pending');
+        
         // Load challenges
         loadChallenges();
         
@@ -322,6 +353,133 @@
         status.style.color = 'var(--danger)';
       }
       setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+    
+    // === Wiki Review ===
+    async function loadWikiStats() {
+      try {
+        const res = await fetch(`/api/admin/wiki/stats?sessionId=${sessionId}`);
+        const data = await res.json();
+        const types = Object.entries(data.byType || {}).map(([t, c]) => `${c} ${t}s`).join(', ');
+        document.getElementById('wikiStats').textContent = `📚 ${data.totalPages} wiki pages (${types}) · ${data.pendingEdits} pending edits`;
+      } catch (e) { console.error('Wiki stats failed:', e); }
+    }
+    
+    async function loadWikiEdits(status) {
+      try {
+        const res = await fetch(`/api/admin/wiki/edits?sessionId=${sessionId}&status=${status}`);
+        const edits = await res.json();
+        const container = document.getElementById('wikiEditsList');
+        const empty = document.getElementById('wikiEditsEmpty');
+        container.innerHTML = '';
+        
+        if (!edits.length) {
+          empty.style.display = 'block';
+          empty.textContent = status === 'pending' 
+            ? 'No pending wiki edits. Chat with the Rabbit to generate proposals!' 
+            : `No ${status} edits found.`;
+          return;
+        }
+        empty.style.display = 'none';
+        
+        const statusColors = { pending: '#d29922', approved: '#3fb950', rejected: '#f85149' };
+        const opIcons = { create: '➕', update: '✏️', delete: '🗑️' };
+        
+        for (const e of edits) {
+          const div = document.createElement('div');
+          div.id = `wiki-edit-${e.id}`;
+          div.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;';
+          div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:600;">${opIcons[e.operation] || '📝'} #${e.id} — ${e.title || e.page_path}</span>
+              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${statusColors[e.status] || '#8b949e'}22;color:${statusColors[e.status] || '#8b949e'}">${e.status}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+              <strong>Path:</strong> <code style="color:var(--accent)">${e.page_path}</code> · 
+              <strong>Op:</strong> ${e.operation} · 
+              <span>${e.created_at}</span>
+            </div>
+            ${e.rationale ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"><strong>Rationale:</strong> ${e.rationale}</div>` : ''}
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+              <button onclick="viewWikiEdit(${e.id})" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">View Content</button>
+              ${e.status === 'pending' ? `
+                <button onclick="approveWikiEdit(${e.id})" style="background:var(--success);color:#000;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">✅ Approve</button>
+                <button onclick="rejectWikiEdit(${e.id})" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">❌ Reject</button>
+                <input id="wiki-feedback-${e.id}" type="text" placeholder="Feedback (optional)..." style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;">
+              ` : ''}
+              ${e.admin_feedback ? `<span style="font-size:11px;color:var(--text-muted);font-style:italic;">Feedback: ${e.admin_feedback}</span>` : ''}
+            </div>
+          `;
+          container.appendChild(div);
+        }
+      } catch (e) { console.error('Wiki edits failed:', e); }
+    }
+    
+    async function viewWikiEdit(id) {
+      try {
+        const res = await fetch(`/api/admin/wiki/edits/${id}?sessionId=${sessionId}`);
+        const edit = await res.json();
+        
+        document.getElementById('wikiModalTitle').textContent = `${edit.title || edit.page_path} (${edit.operation})`;
+        document.getElementById('wikiModalMeta').textContent = `Path: ${edit.page_path} · Status: ${edit.status} · ${edit.created_at}`;
+        
+        let content = '';
+        if (edit.existing_content && edit.operation === 'update') {
+          content = `=== EXISTING CONTENT ===\n${edit.existing_content}\n\n=== PROPOSED CONTENT ===\n${edit.proposed_content}`;
+        } else {
+          content = edit.proposed_content;
+        }
+        document.getElementById('wikiModalContent').textContent = content;
+        
+        const actions = document.getElementById('wikiModalActions');
+        actions.innerHTML = '';
+        if (edit.status === 'pending') {
+          actions.innerHTML = `
+            <button onclick="approveWikiEdit(${id});document.getElementById('wikiModal').style.display='none'" style="background:var(--success);color:#000;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">✅ Approve</button>
+            <button onclick="rejectWikiEdit(${id});document.getElementById('wikiModal').style.display='none'" style="background:var(--danger);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">❌ Reject</button>
+          `;
+        }
+        
+        document.getElementById('wikiModal').style.display = 'block';
+      } catch (e) { console.error('View wiki edit failed:', e); }
+    }
+    
+    async function approveWikiEdit(id) {
+      const feedbackEl = document.getElementById(`wiki-feedback-${id}`);
+      const feedback = feedbackEl ? feedbackEl.value.trim() : '';
+      try {
+        const res = await fetch(`/api/admin/wiki/edits/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, feedback }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const el = document.getElementById(`wiki-edit-${id}`);
+          if (el) el.style.borderColor = 'var(--success)';
+          setTimeout(() => loadWikiEdits(document.getElementById('wikiFilter').value), 500);
+          loadWikiStats();
+        }
+      } catch (e) { console.error('Approve failed:', e); }
+    }
+    
+    async function rejectWikiEdit(id) {
+      const feedbackEl = document.getElementById(`wiki-feedback-${id}`);
+      const feedback = feedbackEl ? feedbackEl.value.trim() : '';
+      try {
+        const res = await fetch(`/api/admin/wiki/edits/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, feedback: feedback || 'Rejected by admin' }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const el = document.getElementById(`wiki-edit-${id}`);
+          if (el) el.style.borderColor = 'var(--danger)';
+          setTimeout(() => loadWikiEdits(document.getElementById('wikiFilter').value), 500);
+          loadWikiStats();
+        }
+      } catch (e) { console.error('Reject failed:', e); }
     }
     
     // === Challenges ===
