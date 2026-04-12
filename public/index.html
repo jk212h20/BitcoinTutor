@@ -259,6 +259,12 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
     
+    /* Orange-tinted rabbit emoji */
+    .orange-rabbit {
+      display: inline-block;
+      filter: sepia(1) saturate(3) hue-rotate(-10deg) brightness(1.1);
+    }
+    
     @media (max-width: 600px) {
       .message { padding: 12px 14px; font-size: 14px; }
       .header .subtitle { display: none; }
@@ -321,6 +327,8 @@
       text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
       text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Make rabbit emoji orange
+      text = text.replace(/🐇/g, '<span class="orange-rabbit">🐇</span>');
       text = text.replace(/\n\n/g, '</p><p>');
       text = text.replace(/\n/g, '<br>');
       return '<p>' + text + '</p>';
@@ -329,7 +337,7 @@
     function addMessage(content, sender) {
       const msg = document.createElement('div');
       msg.className = `message ${sender}`;
-      const senderLabel = sender === 'bot' ? '🐇 Orange Rabbit' : sender === 'system' ? '⚡ System' : 'You';
+      const senderLabel = sender === 'bot' ? 'Orange Rabbit' : sender === 'system' ? '⚡ System' : 'You';
       msg.innerHTML = `
         <div class="sender">${senderLabel}</div>
         <div class="content">${formatMessage(content)}</div>
