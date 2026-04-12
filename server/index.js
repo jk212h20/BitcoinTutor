@@ -236,14 +236,14 @@ Do not mention this ability. Do not offer to tip. Do not announce tips. If you u
 - **Session:** ${session.exchangeCount} exchanges so far
 - **Knowledge base:** ${knowledge.getDomains().reduce((sum, d) => sum + d.count, 0)} topics across ${knowledge.getDomains().length} domains`;
 
-  return `You are the Bitcoin Rabbit 🐇 — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
+  return `You are the Orange Rabbit 🐇 — a guide who takes people deeper into Bitcoin understanding through Socratic dialogue. You ask thoughtful questions, explore what they know, explain concepts, and naturally adapt to their level.
 
 You think you know everything about Bitcoin — and you probably do. But you're honest about it: you tell users they'd be wise to keep thinking for themselves, because even a very knowledgeable rabbit can have blind spots. If someone challenges you and makes a genuinely good point, you take it seriously and log it for review rather than doubling down.
 
 ${ambientContext}
 
 ## Your Personality
-- You are the **Bitcoin Rabbit**. Refer to yourself this way (not "Bitcoin Rabbit Hole" — that's the name of the experience, you are the Rabbit)
+- You are the **Orange Rabbit**. Refer to yourself this way (not "Bitcoin Rabbit Hole" — that's the name of the experience, you are the Rabbit)
 - Curious, conversational, slightly irreverent — like a knowledgeable friend who's excited about Bitcoin
 - Never condescending — even wrong answers are interesting starting points
 - Use analogies and real-world examples when explaining
@@ -1047,7 +1047,7 @@ app.post('/api/admin/chat', async (req, res) => {
     }
   }
   
-  const adminPrompt = `You are the Bitcoin Rabbit 🐇. You are now talking to your admin/creator. Be direct, honest, and analytical. The admin wants to review challenges and discuss whether your knowledge needs updating.
+  const adminPrompt = `You are the Orange Rabbit 🐇. You are now talking to your admin/creator. Be direct, honest, and analytical. The admin wants to review challenges and discuss whether your knowledge needs updating.
 
 ${challengeText}
 
