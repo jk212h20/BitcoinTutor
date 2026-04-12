@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rabbit silhouette in Bitcoin orange -->
+  <!-- Left ear -->
+  <path d="M22 8c-2-6-8-7-10-4s-1 8 2 14c2 4 5 7 8 9" fill="#f7931a" stroke="#e07a10" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Right ear -->
+  <path d="M42 8c2-6 8-7 10-4s1 8-2 14c-2 4-5 7-8 9" fill="#f7931a" stroke="#e07a10" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Inner left ear -->
+  <path d="M20 12c-1.5-4-5-5-6.5-3s-.5 5.5 1.5 9.5c1.2 2.4 3 4.5 5 6" fill="#ffb347"/>
+  <!-- Inner right ear -->
+  <path d="M44 12c1.5-4 5-5 6.5-3s.5 5.5-1.5 9.5c-1.2 2.4-3 4.5-5 6" fill="#ffb347"/>
+  <!-- Head -->
+  <ellipse cx="32" cy="38" rx="18" ry="19" fill="#f7931a" stroke="#e07a10" stroke-width="1.5"/>
+  <!-- Left eye -->
+  <ellipse cx="24" cy="34" rx="3" ry="3.5" fill="#0d1117"/>
+  <ellipse cx="24.8" cy="33" rx="1" ry="1.2" fill="white"/>
+  <!-- Right eye -->
+  <ellipse cx="40" cy="34" rx="3" ry="3.5" fill="#0d1117"/>
+  <ellipse cx="40.8" cy="33" rx="1" ry="1.2" fill="white"/>
+  <!-- Nose -->
+  <ellipse cx="32" cy="42" rx="2.5" ry="2" fill="#e07a10"/>
+  <!-- Mouth -->
+  <path d="M32 44c0 0-3 3-5 2" stroke="#e07a10" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M32 44c0 0 3 3 5 2" stroke="#e07a10" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Whiskers left -->
+  <line x1="14" y1="39" x2="21" y2="40" stroke="#e07a10" stroke-width="1" stroke-linecap="round"/>
+  <line x1="14" y1="43" x2="21" y2="43" stroke="#e07a10" stroke-width="1" stroke-linecap="round"/>
+  <!-- Whiskers right -->
+  <line x1="50" y1="39" x2="43" y2="40" stroke="#e07a10" stroke-width="1" stroke-linecap="round"/>
+  <line x1="50" y1="43" x2="43" y2="43" stroke="#e07a10" stroke-width="1" stroke-linecap="round"/>
+</svg>
