@@ -9,6 +9,7 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const knowledge = require('./knowledge');
+const wiki = require('./wiki');
 const database = require('./database');
 const lnurlAuth = require('./lnurl-auth');
 const blockchain = require('./blockchain');
@@ -50,6 +51,9 @@ const PREV_CONTEXT_MESSAGES = 20; // Max messages to inject from previous sessio
 
 // Load knowledge base
 knowledge.loadKnowledge();
+
+// Initialize wiki
+wiki.initWiki();
 
 // Load one-time prompts
 const ONE_TIME_PROMPTS = JSON.parse(
@@ -283,6 +287,13 @@ Include JSON tool calls in your response. The system executes them and provides 
 <tool>{"action": "search", "query": "search terms"}</tool> — Search topics
 <tool>{"action": "related", "slug": "topic-slug"}</tool> — Get related topics
 
+**Wiki tools (your knowledge wiki — ${wiki.getStats().totalPages} pages):**
+<tool>{"action": "wiki_search", "query": "search terms"}</tool> — Search wiki pages
+<tool>{"action": "wiki_page", "path": "concepts/taproot.md"}</tool> — Read a wiki page
+<tool>{"action": "wiki_index"}</tool> — Browse the wiki table of contents
+<tool>{"action": "wiki_propose", "path": "queries/taproot-vs-segwit.md", "operation": "create", "title": "Taproot vs SegWit Comparison", "content": "full markdown content", "rationale": "Valuable synthesis from conversation"}</tool> — Propose a new wiki page or edit (goes to admin review queue)
+Prefer wiki tools over raw knowledge tools — the wiki contains synthesized, interlinked knowledge. Use raw topics as fallback when wiki coverage is thin. When conversations produce valuable insights, propose filing them as wiki query pages.
+
 **Blockchain tools (real-time data!):**
 <tool>{"action": "latest_block"}</tool> <tool>{"action": "mempool"}</tool> <tool>{"action": "fees"}</tool>
 <tool>{"action": "address", "address": "1A1z..."}</tool> <tool>{"action": "transaction", "txid": "..."}</tool>
@@ -405,6 +416,16 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       specialActions.push(call);
     } else if (call.action === 'update_notes' && session.userId) {
       notesUpdate = call.notes;
+    } else if (call.action === 'wiki_propose') {
+      // Propose a wiki edit — goes to admin review queue
+      const existing = wiki.getPage(call.path);
+      const editId = database.proposeWikiEdit(
+        call.path, call.operation || 'create', call.title,
+        call.content, existing?.content || null, call.rationale,
+        session.id, session.userId
+      );
+      wiki.appendLog(`propose | ${call.operation || 'create'} ${call.path} — "${call.rationale || 'no rationale'}" (edit #${editId})`);
+      console.log(`📝 Wiki edit proposed: ${call.operation || 'create'} ${call.path} (edit #${editId})`);
     } else if (call.action === 'mark_delivered' && call.prompt_id) {
       // Mark a one-time prompt as delivered
       const prompt = ONE_TIME_PROMPTS.find(p => p.id === call.prompt_id);
@@ -519,6 +540,25 @@ async function callLLM(session, userMessage, isFirstMessage = false, visitorInfo
       } else if (call.action === 'related') {
         const related = knowledge.getRelatedTopics(call.slug);
         toolResults += `\n[Related to "${call.slug}"]: ${related.map(r => r.title).join(', ') || 'none found'}\n`;
+      } else if (call.action === 'wiki_search') {
+        const results = wiki.searchWiki(call.query);
+        toolResults += `\n[Wiki search: "${call.query}"]\n`;
+        if (results.length === 0) {
+          toolResults += `No wiki pages found. Try raw knowledge tools instead.\n`;
+        } else {
+          for (const r of results) {
+            toolResults += `- [${r.title}](${r.path}) [${r.type}] — ${r.summary || 'no summary'}\n`;
+          }
+        }
+      } else if (call.action === 'wiki_page') {
+        const page = wiki.getPage(call.path);
+        if (page) {
+          toolResults += `\n[Wiki: ${page.title || call.path}]\n${page.content}\n`;
+        } else {
+          toolResults += `\n[Wiki: page "${call.path}" not found]\n`;
+        }
+      } else if (call.action === 'wiki_index') {
+        toolResults += `\n[Wiki Index]\n${wiki.getWikiIndex()}\n`;
       } else if (blockchainActions.includes(call.action)) {
         try {
           const result = await blockchain.executeBlockchainTool(call);
@@ -1093,6 +1133,107 @@ The admin may ask you about specific challenges, whether you think you were wron
     console.error('Admin chat error:', err);
     res.status(500).json({ error: 'Failed to process admin message' });
   }
+});
+
+// === Admin Wiki Routes ===
+
+app.get('/api/admin/wiki/stats', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const stats = wiki.getStats();
+  const pendingEdits = database.getPendingWikiEditCount();
+  const recentLog = wiki.getRecentLog(10);
+  res.json({ ...stats, pendingEdits, recentLog });
+});
+
+app.get('/api/admin/wiki/edits', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const status = req.query.status || 'pending';
+  const edits = database.getWikiEdits(status, 50);
+  res.json(edits);
+});
+
+app.get('/api/admin/wiki/edits/:id', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const edit = database.getWikiEdit(parseInt(req.params.id));
+  if (!edit) return res.status(404).json({ error: 'Edit not found' });
+  res.json(edit);
+});
+
+app.post('/api/admin/wiki/edits/:id/approve', (req, res) => {
+  const { sessionId, feedback } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const edit = database.getWikiEdit(parseInt(req.params.id));
+  if (!edit) return res.status(404).json({ error: 'Edit not found' });
+  if (edit.status !== 'pending') return res.status(400).json({ error: 'Edit already reviewed' });
+  
+  // Write the page to the wiki
+  wiki.writePage(edit.page_path, edit.proposed_content);
+  wiki.appendLog(`approve | ${edit.operation} ${edit.page_path} — "${edit.title || 'untitled'}" (edit #${edit.id})`);
+  database.updateWikiEditStatus(edit.id, 'approved', feedback);
+  
+  console.log(`✅ Wiki edit #${edit.id} approved: ${edit.operation} ${edit.page_path}`);
+  res.json({ success: true });
+});
+
+app.post('/api/admin/wiki/edits/:id/reject', (req, res) => {
+  const { sessionId, feedback } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const edit = database.getWikiEdit(parseInt(req.params.id));
+  if (!edit) return res.status(404).json({ error: 'Edit not found' });
+  if (edit.status !== 'pending') return res.status(400).json({ error: 'Edit already reviewed' });
+  
+  wiki.appendLog(`reject | ${edit.operation} ${edit.page_path} — "${edit.title || 'untitled'}" (edit #${edit.id}) — ${feedback || 'no reason'}`);
+  database.updateWikiEditStatus(edit.id, 'rejected', feedback);
+  
+  console.log(`❌ Wiki edit #${edit.id} rejected: ${edit.operation} ${edit.page_path}`);
+  res.json({ success: true });
+});
+
+// Browse wiki pages (admin)
+app.get('/api/admin/wiki/pages', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const search = req.query.q;
+  if (search) {
+    res.json(wiki.searchWiki(search, 20));
+  } else {
+    // Return index
+    res.json({ index: wiki.getWikiIndex() });
+  }
+});
+
+app.get('/api/admin/wiki/page', (req, res) => {
+  const sessionId = req.query.sessionId;
+  const session = sessions.get(sessionId);
+  if (!session || !session.userId || !database.isAdmin(session.userId)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const pagePath = req.query.path;
+  if (!pagePath) return res.status(400).json({ error: 'path required' });
+  const page = wiki.getPage(pagePath);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+  res.json(page);
 });
 
 app.get('/admin', (req, res) => {

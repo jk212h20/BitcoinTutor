@@ -141,6 +141,25 @@ async function init() {
     )
   `);
   
+  // Wiki edit proposals — Rabbit proposes, admin approves/rejects
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wiki_edits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_path TEXT NOT NULL,
+      operation TEXT NOT NULL DEFAULT 'create',
+      title TEXT,
+      proposed_content TEXT NOT NULL,
+      existing_content TEXT,
+      rationale TEXT,
+      session_id TEXT,
+      user_id INTEGER,
+      status TEXT DEFAULT 'pending',
+      admin_feedback TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      reviewed_at TEXT
+    )
+  `);
+  
   saveDatabase();
   console.log('Database tables ready');
 }
@@ -562,6 +581,54 @@ function getVisitorLinkedUser(visitorId) {
   return null;
 }
 
+// === Wiki Edits ===
+
+function proposeWikiEdit(pagePath, operation, title, proposedContent, existingContent, rationale, sessionId, userId) {
+  db.run(`INSERT INTO wiki_edits (page_path, operation, title, proposed_content, existing_content, rationale, session_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [pagePath, operation, title || null, proposedContent, existingContent || null, rationale || null, sessionId || null, userId || null]);
+  const id = db.exec('SELECT last_insert_rowid()')[0].values[0][0];
+  saveDatabase();
+  return id;
+}
+
+function getWikiEdits(status = 'pending', limit = 50) {
+  const query = status === 'all'
+    ? `SELECT * FROM wiki_edits ORDER BY created_at DESC LIMIT ?`
+    : `SELECT * FROM wiki_edits WHERE status = ? ORDER BY created_at DESC LIMIT ?`;
+  const params = status === 'all' ? [limit] : [status, limit];
+  const results = db.exec(query, params);
+  if (!results.length) return [];
+  const cols = results[0].columns;
+  return results[0].values.map(row => {
+    const obj = {};
+    cols.forEach((col, i) => obj[col] = row[i]);
+    return obj;
+  });
+}
+
+function getWikiEdit(id) {
+  const stmt = db.prepare('SELECT * FROM wiki_edits WHERE id = ?');
+  stmt.bind([id]);
+  if (stmt.step()) {
+    const row = stmt.getAsObject();
+    stmt.free();
+    return row;
+  }
+  stmt.free();
+  return null;
+}
+
+function updateWikiEditStatus(id, status, feedback) {
+  db.run(`UPDATE wiki_edits SET status = ?, admin_feedback = ?, reviewed_at = datetime('now') WHERE id = ?`,
+    [status, feedback || null, id]);
+  saveDatabase();
+}
+
+function getPendingWikiEditCount() {
+  const results = db.exec(`SELECT COUNT(*) FROM wiki_edits WHERE status = 'pending'`);
+  return results[0]?.values[0][0] || 0;
+}
+
 module.exports = {
   init,
   saveDatabase,
@@ -611,4 +678,10 @@ module.exports = {
   logChallenge,
   getChallenges,
   updateChallengeVerdict,
+  // Wiki
+  proposeWikiEdit,
+  getWikiEdits,
+  getWikiEdit,
+  updateWikiEditStatus,
+  getPendingWikiEditCount,
 };

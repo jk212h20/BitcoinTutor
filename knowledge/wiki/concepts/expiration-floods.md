@@ -1,0 +1,97 @@
+---
+title: "Expiration floods"
+type: concept
+tags: [lightning, difficulty-4]
+created: 2026-04-12
+updated: 2026-04-12
+sources: [sources/optech-topics.md]
+related: ["concepts/htlc.md", "concepts/timelocks.md", "concepts/ptlc.md", "concepts/exfiltration-resistant-signing.md", "concepts/fee-estimation.md"]
+summary: "Also covering Forced expiration spam and Flood and loot
+
+Expiration floods occur when many timelock-contingent payments need to be settled onchain wit"
+difficulty: 4
+domain: lightning
+---
+
+Also covering Forced expiration spam and Flood and loot
+
+Expiration floods occur when many timelock-contingent payments need to be settled onchain within a limited period of time.  If not all of the settlement transactions can fit into blocks before timelocks begin expiring, then not all of the contingent payments will resolve as expected, likely resulting in some users losing money.
+
+For example, Mallory runs a very popular LN node with many users.  Each
+channel has the maximum-allowed number of incoming and outgoing pending
+HTLCs, making the cost to resolve each of those channels
+onchain around 100,000 vbytes.  A full block can only fit about 10 of
+those channels.  If the most critical timelocks on
+some of the HTLCs might expire in 10 blocks or less, Mallory can force
+close more than 100 of those channels to eliminate the guarantee that
+her honest counterparties will receive their money.
+
+Although an expiration flood can be triggered deliberately by a
+malicious counterparty, it can also happen accidentally either by
+coincidence or by a situation that causes many users to attempt to close
+their channels simultaneously, e.g. a bug in a software implementation.
+In the accidental case, some honest users will get their money and other
+honest users may not, even though they all followed the protocol
+correctly.
+
+Expiration floods were described in the original Lightning Network
+paper under the name forced expiration spam.  A later
+paper called the attack flood and loot.  Concern
+about expiration floods has heavily influenced the development of LN and
+other offchain protocols.
+
+Mitigations that don’t require consensus changes include:
+
+
+  
+    ● Minimizing onchain enforcement data: designing protocols and
+setting limits so that timelock-contingent payments are small.  For
+example, many LN implementations default to accepting and creating
+much less than the protocol-allowed maximum number of pending HTLCs.
+(That also helps mitigate other attacks.)
+  
+  
+    ● Using long timelocks when possible: in our example above, Mallory
+needs to close at least 100 channels with 10-block timelocks.  If the
+timelocks were 100 blocks, she’d need to close 1,000 channels
+simultaneously.  It would take more effort on her part to find that
+many victims and get their channels into an exploitable state.
+  
+  
+    ● Improving counterparty decentralization: someone who is a
+counterparty to 100 users has more power to execute an expiration
+flood attack than someone who is only counterparty to 10 users.
+This suggests that a less centralized distribution of counterparties
+might be safer against deliberately triggered expiration floods.
+Of course, in privacy-protecting protocols, it may be impossible to
+prove that two counterparties are distinct entities and not colluding.
+  
+
+
+Proposed mitigations that require consensus changes include:
+
+
+  
+    ● Dynamic bounded block sizes: this would allow miners to create larger
+blocks during high periods of demand so that they can confirm more
+transactions during an expiration flood.  Proposals of this nature
+usually require miners to pay a cost for creating higher blocks, such
+as destroying bitcoins or generating more proof of work.  The lost
+bitcoins and work are expected to be compensated for by the extra fee
+income they will receive from confirming urgent transactions.
+  
+  
+    ● Fee-dependent timelocks: this would prevent a timelock from
+expiring when feerates were above a specified amount.  If too many
+timelock-contingent payments entered the mempool at once; the users
+would bid up their feerates in competition with each other to get
+their transactions confirmed before the regular timelocks expired.
+When feerates exceeded the fee-dependent timelock, expiration of those
+timelocks would be delayed, keeping those users safe until feerates
+reduced. As long as the user paid a feerate above their fee-dependent
+timelock amount, their transaction should confirm before the timelock
+expires, ensuring the user’s desired transaction gets confirmed before
+the timelock expires.
+
+---
+*Source: [Bitcoin Optech Topics](https://bitcoinops.org/en/topics/) — ingested 2026-04-12*
